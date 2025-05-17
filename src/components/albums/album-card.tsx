@@ -5,24 +5,28 @@ import type { Album } from "@/types";
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, BookUser, Globe, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CalendarDays, BookUser, Globe, ShieldCheck, Pencil, Trash2 } from "lucide-react";
 
 interface AlbumCardProps {
   album: Album;
   onViewAlbum: (album: Album) => void;
+  onEditAlbum: (album: Album) => void;
+  onDeleteAlbum: (albumId: string) => void;
+  isUserAuthenticated: boolean;
 }
 
-export function AlbumCard({ album, onViewAlbum }: AlbumCardProps) {
+export function AlbumCard({ album, onViewAlbum, onEditAlbum, onDeleteAlbum, isUserAuthenticated }: AlbumCardProps) {
   return (
-    <div
-      className="cursor-pointer h-full group"
-      onClick={() => onViewAlbum(album)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onViewAlbum(album); }}
-      role="button"
-      tabIndex={0}
-      aria-label={`Ver detalles de ${album.title}`}
-    >
-      <Card className="flex flex-col h-full overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow duration-300 rounded-lg">
+    <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
+      <div
+        className="cursor-pointer group relative"
+        onClick={() => onViewAlbum(album)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onViewAlbum(album); }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Ver detalles de ${album.title}`}
+      >
         <CardHeader className="p-0 relative">
           <div className="aspect-[3/4] w-full relative">
             <Image
@@ -65,10 +69,20 @@ export function AlbumCard({ album, onViewAlbum }: AlbumCardProps) {
             )}
           </div>
         </CardContent>
-        <CardFooter className="p-6 bg-secondary/50 rounded-b-lg">
-          <Badge variant="outline">Ver Álbum</Badge>
-        </CardFooter>
-      </Card>
-    </div>
+      </div>
+      <CardFooter className="p-4 bg-secondary/50 rounded-b-lg flex justify-between items-center">
+        <Button variant="outline" size="sm" onClick={() => onViewAlbum(album)}>Ver Álbum</Button>
+        {isUserAuthenticated && (
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={() => onEditAlbum(album)} aria-label={`Editar ${album.title}`}>
+              <Pencil className="h-5 w-5 text-blue-500" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onDeleteAlbum(album.id)} aria-label={`Borrar ${album.title}`}>
+              <Trash2 className="h-5 w-5 text-red-500" />
+            </Button>
+          </div>
+        )}
+      </CardFooter>
+    </Card>
   );
 }

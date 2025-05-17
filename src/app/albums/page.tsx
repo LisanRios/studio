@@ -8,7 +8,7 @@ import { AlbumCard } from "@/components/albums/album-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { BarChart, LayoutGrid, List, X, PlusCircle } from "lucide-react";
+import { BarChart, LayoutGrid, List, X, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,6 +19,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useForm, Controller } from "react-hook-form";
 import { Label } from "@/components/ui/label";
@@ -49,7 +60,10 @@ export default function AlbumsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [visibleFilters, setVisibleFilters] = useState<{ publisher: boolean; type: boolean; country: boolean; }>({ publisher: true, type: true, country: true});
   const [selectedAlbumForView, setSelectedAlbumForView] = useState<Album | null>(null);
-  const [showAddAlbumDialog, setShowAddAlbumDialog] = useState(false);
+  
+  const [showAddEditAlbumDialog, setShowAddEditAlbumDialog] = useState(false);
+  const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
+  const [albumToDeleteId, setAlbumToDeleteId] = useState<string | null>(null);
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<AlbumFormData>({
     defaultValues: {
@@ -64,6 +78,27 @@ export default function AlbumsPage() {
     }
   });
 
+  useEffect(() => {
+    if (editingAlbum) {
+      reset({
+        ...editingAlbum,
+        type: editingAlbum.type || NONE_ALBUM_TYPE_FORM_SENTINEL,
+      });
+    } else {
+      reset({ // Default values for adding new album
+        title: "",
+        year: new Date().getFullYear(),
+        publisher: "",
+        coverImage: "https://placehold.co/300x450.png",
+        description: "",
+        country: "",
+        type: NONE_ALBUM_TYPE_FORM_SENTINEL,
+        driveLink: ""
+      });
+    }
+  }, [editingAlbum, reset]);
+
+
   const playerAlbumIdsFilter = useMemo(() => {
     const idsParam = searchParams.get("playerAlbumIds");
     return idsParam ? idsParam.split(',') : null;
@@ -77,27 +112,67 @@ export default function AlbumsPage() {
   const handleViewAlbum = (album: Album) => {
     setSelectedAlbumForView(album);
   };
+  
+  const openAddAlbumDialog = () => {
+    setEditingAlbum(null);
+    setShowAddEditAlbumDialog(true);
+  };
 
-  const handleAddAlbum = (data: AlbumFormData) => {
-    const newAlbum: Album = {
-      id: Date.now().toString(),
-      title: data.title,
-      year: Number(data.year),
-      publisher: data.publisher,
-      coverImage: data.coverImage,
-      description: data.description,
-      country: data.country,
-      type: data.type === NONE_ALBUM_TYPE_FORM_SENTINEL ? undefined : data.type as Album['type'],
-      driveLink: data.driveLink,
-      dataAiHint: `${data.title.toLowerCase()} album`,
-    };
-    setAlbums(prevAlbums => [newAlbum, ...prevAlbums]);
-    setShowAddAlbumDialog(false);
-    reset();
+  const openEditAlbumDialog = (album: Album) => {
+    setEditingAlbum(album);
+    setShowAddEditAlbumDialog(true);
+  };
+
+  const handleDeleteAlbumRequest = (albumId: string) => {
+    setAlbumToDeleteId(albumId);
+  };
+
+  const confirmDeleteAlbum = () => {
+    if (!albumToDeleteId) return;
+    setAlbums(prevAlbums => prevAlbums.filter(album => album.id !== albumToDeleteId));
     toast({
-      title: "Álbum Agregado",
-      description: `"${data.title}" ha sido agregado a la colección.`,
+      title: "Álbum Eliminado",
+      description: "El álbum ha sido eliminado de la colección.",
     });
+    setAlbumToDeleteId(null);
+  };
+
+  const handleFormSubmit = (data: AlbumFormData) => {
+    if (editingAlbum) { // Editing existing album
+      const updatedAlbum: Album = {
+        ...editingAlbum,
+        ...data,
+        year: Number(data.year),
+        type: data.type === NONE_ALBUM_TYPE_FORM_SENTINEL ? undefined : data.type as Album['type'],
+        dataAiHint: `${data.title.toLowerCase()} album`,
+      };
+      setAlbums(prevAlbums => prevAlbums.map(a => a.id === editingAlbum.id ? updatedAlbum : a));
+      toast({
+        title: "Álbum Actualizado",
+        description: `"${data.title}" ha sido actualizado.`,
+      });
+    } else { // Adding new album
+      const newAlbum: Album = {
+        id: Date.now().toString(),
+        title: data.title,
+        year: Number(data.year),
+        publisher: data.publisher,
+        coverImage: data.coverImage,
+        description: data.description,
+        country: data.country,
+        type: data.type === NONE_ALBUM_TYPE_FORM_SENTINEL ? undefined : data.type as Album['type'],
+        driveLink: data.driveLink,
+        dataAiHint: `${data.title.toLowerCase()} album`,
+      };
+      setAlbums(prevAlbums => [newAlbum, ...prevAlbums]);
+      toast({
+        title: "Álbum Agregado",
+        description: `"${data.title}" ha sido agregado a la colección.`,
+      });
+    }
+    setShowAddEditAlbumDialog(false);
+    setEditingAlbum(null);
+    // Reset is handled by useEffect watching editingAlbum
   };
 
   const filteredAndSortedAlbums = useMemo(() => {
@@ -223,6 +298,9 @@ export default function AlbumsPage() {
                 description: viewMode === 'list' ? album.description : (album.description ? album.description.substring(0,100) + '...' : undefined)
               }}
               onViewAlbum={handleViewAlbum}
+              onEditAlbum={openEditAlbumDialog}
+              onDeleteAlbum={handleDeleteAlbumRequest}
+              isUserAuthenticated={!!user}
             />
           ))}
         </div>
@@ -234,7 +312,7 @@ export default function AlbumsPage() {
 
       {user && (
         <Button
-          onClick={() => setShowAddAlbumDialog(true)}
+          onClick={openAddAlbumDialog}
           className="fixed bottom-6 right-6 rounded-full p-4 shadow-lg"
           size="lg"
           aria-label="Agregar nuevo álbum"
@@ -243,13 +321,21 @@ export default function AlbumsPage() {
         </Button>
       )}
 
-      <Dialog open={showAddAlbumDialog} onOpenChange={setShowAddAlbumDialog}>
+      <Dialog open={showAddEditAlbumDialog} onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setEditingAlbum(null); // Ensure editingAlbum is reset when dialog closes
+            reset(); // Explicitly reset form
+          }
+          setShowAddEditAlbumDialog(isOpen);
+        }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Agregar Nuevo Álbum</DialogTitle>
-            <DialogDescription>Completa los detalles del nuevo álbum.</DialogDescription>
+            <DialogTitle>{editingAlbum ? "Editar Álbum" : "Agregar Nuevo Álbum"}</DialogTitle>
+            <DialogDescription>
+              {editingAlbum ? "Modifica los detalles del álbum." : "Completa los detalles del nuevo álbum."}
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(handleAddAlbum)} className="space-y-4 py-4">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
             <div>
               <Label htmlFor="title">Título</Label>
               <Input id="title" {...register("title", { required: "El título es obligatorio" })} />
@@ -306,11 +392,26 @@ export default function AlbumsPage() {
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancelar</Button>
               </DialogClose>
-              <Button type="submit">Agregar Álbum</Button>
+              <Button type="submit">{editingAlbum ? "Guardar Cambios" : "Agregar Álbum"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!albumToDeleteId} onOpenChange={(isOpen) => { if (!isOpen) setAlbumToDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente el álbum de la colección.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAlbumToDeleteId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAlbum}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!selectedAlbumForView} onOpenChange={(isOpen) => { if (!isOpen) setSelectedAlbumForView(null); }}>
         <DialogContent className="sm:max-w-4xl h-[85vh] flex flex-col p-0">

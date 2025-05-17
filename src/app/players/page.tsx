@@ -5,16 +5,26 @@ import { useState, useMemo, useEffect } from "react";
 import type { Player, PlayerFormData } from "@/types";
 import { PlayerCard } from "@/components/players/player-card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea"; // Aunque no se usa directamente, lo mantenemos por si se necesita
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { XIcon, FilterIcon, PlusCircle } from "lucide-react";
+import { XIcon, FilterIcon, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useForm, Controller } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { playerPositions } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const initialMockPlayers: Player[] = [
   { id: "1", name: "Zinedine Zidane", team: "Real Madrid", position: "Centrocampista", dateOfBirth: "1972-06-23", nationality: "Francés", photoUrl: "https://placehold.co/300x300.png", appearances: 789, goals: 156, dataAiHint: "zidane portrait", albumIds: ["1", "3"] },
@@ -35,7 +45,10 @@ export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>(initialMockPlayers);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<PlayerFilters>({ team: "all", position: "all", nationality: "all" });
-  const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
+  
+  const [showAddEditPlayerDialog, setShowAddEditPlayerDialog] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [playerToDeleteId, setPlayerToDeleteId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -54,8 +67,31 @@ export default function PlayersPage() {
     }
   });
 
+  useEffect(() => {
+    if (editingPlayer) {
+      reset({
+        ...editingPlayer,
+        albumIdsInput: editingPlayer.albumIds?.join(',') || '',
+        appearances: editingPlayer.appearances || 0, // ensure number for react-hook-form
+        goals: editingPlayer.goals || 0, // ensure number for react-hook-form
+      });
+    } else {
+      reset({ // Default values for adding new player
+        name: "",
+        team: "",
+        position: "Delantero",
+        dateOfBirth: "",
+        nationality: "",
+        photoUrl: "https://placehold.co/300x300.png",
+        appearances: 0,
+        goals: 0,
+        albumIdsInput: ""
+      });
+    }
+  }, [editingPlayer, reset]);
+
   const uniqueTeams = useMemo(() => Array.from(new Set(players.map(p => p.team))).sort(), [players]);
-  const uniquePositions = useMemo(() => Array.from(new Set(players.map(p => p.position))).sort(), [players]);
+  // const uniquePositions = useMemo(() => Array.from(new Set(players.map(p => p.position))).sort(), [players]); // playerPositions is already sorted
   const uniqueNationalities = useMemo(() => Array.from(new Set(players.map(p => p.nationality))).sort(), [players]);
 
   const handleFilterChange = (filterType: keyof PlayerFilters, value: string) => {
@@ -67,22 +103,63 @@ export default function PlayersPage() {
     setFilters({ team: "all", position: "all", nationality: "all" });
   };
 
-  const handleAddPlayer = (data: PlayerFormData) => {
-    const newPlayer: Player = {
+  const openAddPlayerDialog = () => {
+    setEditingPlayer(null);
+    setShowAddEditPlayerDialog(true);
+  };
+
+  const openEditPlayerDialog = (player: Player) => {
+    setEditingPlayer(player);
+    setShowAddEditPlayerDialog(true);
+  };
+
+  const handleDeletePlayerRequest = (playerId: string) => {
+    setPlayerToDeleteId(playerId);
+  };
+
+  const confirmDeletePlayer = () => {
+    if (!playerToDeleteId) return;
+    setPlayers(prevPlayers => prevPlayers.filter(player => player.id !== playerToDeleteId));
+    toast({
+      title: "Jugador Eliminado",
+      description: "El jugador ha sido eliminado de la lista.",
+    });
+    setPlayerToDeleteId(null);
+  };
+
+  const handleFormSubmit = (data: PlayerFormData) => {
+    const commonPlayerData = {
       ...data,
-      id: Date.now().toString(),
       appearances: Number(data.appearances) || undefined,
       goals: Number(data.goals) || undefined,
       albumIds: data.albumIdsInput ? data.albumIdsInput.split(',').map(id => id.trim()).filter(id => id) : undefined,
       dataAiHint: `${data.name.toLowerCase()} soccer player`,
     };
-    setPlayers(prevPlayers => [newPlayer, ...prevPlayers]);
-    setShowAddPlayerDialog(false);
-    reset();
-    toast({
-      title: "Jugador Agregado",
-      description: `"${data.name}" ha sido agregado a la lista.`,
-    });
+
+    if (editingPlayer) { // Editing existing player
+      const updatedPlayer: Player = {
+        ...editingPlayer,
+        ...commonPlayerData,
+      };
+      setPlayers(prevPlayers => prevPlayers.map(p => p.id === editingPlayer.id ? updatedPlayer : p));
+      toast({
+        title: "Jugador Actualizado",
+        description: `"${data.name}" ha sido actualizado.`,
+      });
+    } else { // Adding new player
+      const newPlayer: Player = {
+        ...commonPlayerData,
+        id: Date.now().toString(),
+      };
+      setPlayers(prevPlayers => [newPlayer, ...prevPlayers]);
+      toast({
+        title: "Jugador Agregado",
+        description: `"${data.name}" ha sido agregado a la lista.`,
+      });
+    }
+    setShowAddEditPlayerDialog(false);
+    setEditingPlayer(null);
+    // Reset is handled by useEffect watching editingPlayer
   };
 
   const filteredPlayers = useMemo(() => {
@@ -117,7 +194,7 @@ export default function PlayersPage() {
             <SelectTrigger><SelectValue placeholder="Filtrar por Posición" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las Posiciones</SelectItem>
-              {uniquePositions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+              {playerPositions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
             </SelectContent>
           </Select>
            <Select value={filters.nationality} onValueChange={(value) => handleFilterChange("nationality", value)}>
@@ -145,7 +222,13 @@ export default function PlayersPage() {
       {filteredPlayers.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredPlayers.map(player => (
-            <PlayerCard key={player.id} player={player} />
+            <PlayerCard 
+              key={player.id} 
+              player={player} 
+              onEditPlayer={openEditPlayerDialog}
+              onDeletePlayer={handleDeletePlayerRequest}
+              isUserAuthenticated={!!user}
+            />
           ))}
         </div>
       ) : (
@@ -158,7 +241,7 @@ export default function PlayersPage() {
 
       {user && (
         <Button
-          onClick={() => setShowAddPlayerDialog(true)}
+          onClick={openAddPlayerDialog}
           className="fixed bottom-6 right-6 rounded-full p-4 shadow-lg"
           size="lg"
           aria-label="Agregar nuevo jugador"
@@ -167,13 +250,21 @@ export default function PlayersPage() {
         </Button>
       )}
 
-      <Dialog open={showAddPlayerDialog} onOpenChange={setShowAddPlayerDialog}>
+      <Dialog open={showAddEditPlayerDialog} onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setEditingPlayer(null); // Ensure editingPlayer is reset
+            reset(); // Explicitly reset form
+          }
+          setShowAddEditPlayerDialog(isOpen);
+        }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Agregar Nuevo Jugador</DialogTitle>
-            <DialogDescription>Completa los detalles del nuevo jugador.</DialogDescription>
+            <DialogTitle>{editingPlayer ? "Editar Jugador" : "Agregar Nuevo Jugador"}</DialogTitle>
+            <DialogDescription>
+              {editingPlayer ? "Modifica los detalles del jugador." : "Completa los detalles del nuevo jugador."}
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(handleAddPlayer)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             <div>
               <Label htmlFor="name">Nombre Completo</Label>
               <Input id="name" {...register("name", { required: "El nombre es obligatorio" })} />
@@ -238,11 +329,26 @@ export default function PlayersPage() {
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancelar</Button>
               </DialogClose>
-              <Button type="submit">Agregar Jugador</Button>
+              <Button type="submit">{editingPlayer ? "Guardar Cambios" : "Agregar Jugador"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!playerToDeleteId} onOpenChange={(isOpen) => { if(!isOpen) setPlayerToDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente al jugador de la lista.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPlayerToDeleteId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeletePlayer}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
