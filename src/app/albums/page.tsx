@@ -5,15 +5,14 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { Album, AlbumFormData } from "@/types";
 import { AlbumCard } from "@/components/albums/album-card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { BarChart, LayoutGrid, List, X, PlusCircle, Pencil, Trash2, UserX } from "lucide-react";
+import { LayoutGrid, List, PlusCircle, Pencil, Trash2, UserX, Filter, XIcon, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuCheckboxItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -34,10 +33,12 @@ import { useForm, Controller } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { validAlbumTypes, NONE_ALBUM_TYPE_FORM_SENTINEL } from "@/types";
-import { initialMockAlbums } from "@/data/mock-albums"; // Import from centralized data
+import { initialMockAlbums } from "@/data/mock-albums"; 
 
 type SortOption = "year-desc" | "year-asc" | "title-asc" | "title-desc";
 type ViewMode = "grid" | "list";
+
+const ALL_FILTER_VALUE = "all";
 
 export default function AlbumsPage() {
   const searchParams = useSearchParams();
@@ -45,13 +46,16 @@ export default function AlbumsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [albumsData, setAlbumsData] = useState<Album[]>(initialMockAlbums); // Renamed state setter
+  const [albumsData, setAlbumsData] = useState<Album[]>(initialMockAlbums);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("year-desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [visibleFilters, setVisibleFilters] = useState<{ publisher: boolean; type: boolean; country: boolean; }>({ publisher: true, type: true, country: true});
-  const [selectedAlbumForView, setSelectedAlbumForView] = useState<Album | null>(null);
   
+  const [filterPublisher, setFilterPublisher] = useState<string>(ALL_FILTER_VALUE);
+  const [filterType, setFilterType] = useState<string>(ALL_FILTER_VALUE);
+  const [filterCountry, setFilterCountry] = useState<string>(ALL_FILTER_VALUE);
+
+  const [selectedAlbumForView, setSelectedAlbumForView] = useState<Album | null>(null);
   const [showAddEditAlbumDialog, setShowAddEditAlbumDialog] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
   const [albumToDeleteId, setAlbumToDeleteId] = useState<string | null>(null);
@@ -86,6 +90,26 @@ export default function AlbumsPage() {
       });
     }
   }, [editingAlbum, reset]);
+
+  const uniquePublishers = useMemo(() => {
+    const publishers = albumsData.map(album => album.publisher).filter(p => !!p);
+    return Array.from(new Set(publishers)).sort();
+  }, [albumsData]);
+
+  const uniqueTypes = useMemo(() => {
+    const types = albumsData
+      .map(album => album.type)
+      .filter(Boolean) as Exclude<Album['type'], undefined>[];
+    return Array.from(new Set(types)).sort();
+  }, [albumsData]);
+  
+  const uniqueCountries = useMemo(() => {
+    const countries = albumsData
+      .map(album => album.country)
+      .filter(Boolean) as string[];
+    return Array.from(new Set(countries)).sort();
+  }, [albumsData]);
+
 
   const handleViewAlbum = (album: Album) => {
     setSelectedAlbumForView(album);
@@ -158,12 +182,40 @@ export default function AlbumsPage() {
     router.push('/albums');
   };
 
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setSortOption("year-desc");
+    setFilterPublisher(ALL_FILTER_VALUE);
+    setFilterType(ALL_FILTER_VALUE);
+    setFilterCountry(ALL_FILTER_VALUE);
+    if (playerAlbumIdsFilter) clearPlayerFilter();
+  };
+
+  const activeFilterCount = [
+    searchTerm,
+    filterPublisher !== ALL_FILTER_VALUE,
+    filterType !== ALL_FILTER_VALUE,
+    filterCountry !== ALL_FILTER_VALUE,
+    playerAlbumIdsFilter,
+  ].filter(Boolean).length;
+
+
   const filteredAndSortedAlbums = useMemo(() => {
     let filtered = [...albumsData];
 
     if (playerAlbumIdsFilter) {
       const albumIdsToShow = playerAlbumIdsFilter.split(',');
       filtered = filtered.filter(album => albumIdsToShow.includes(album.id));
+    }
+
+    if (filterPublisher !== ALL_FILTER_VALUE) {
+      filtered = filtered.filter(album => album.publisher === filterPublisher);
+    }
+    if (filterType !== ALL_FILTER_VALUE) {
+      filtered = filtered.filter(album => album.type === filterType);
+    }
+    if (filterCountry !== ALL_FILTER_VALUE) {
+      filtered = filtered.filter(album => album.country === filterCountry);
     }
 
     filtered = filtered.filter(album =>
@@ -179,7 +231,7 @@ export default function AlbumsPage() {
       case "title-desc": filtered.sort((a, b) => b.title.localeCompare(a.title)); break;
     }
     return filtered;
-  }, [searchTerm, sortOption, albumsData, playerAlbumIdsFilter]);
+  }, [searchTerm, sortOption, albumsData, playerAlbumIdsFilter, filterPublisher, filterType, filterCountry]);
 
 
   return (
@@ -195,12 +247,12 @@ export default function AlbumsPage() {
             Mostrando álbumes de <strong className="font-semibold">{playerNameFilter}</strong>.
           </p>
           <Button variant="ghost" onClick={clearPlayerFilter} className="text-accent-foreground hover:bg-accent/30">
-            <UserX className="mr-2 h-4 w-4" /> Limpiar Filtro
+            <UserX className="mr-2 h-4 w-4" /> Limpiar Filtro de Jugador
           </Button>
         </div>
       )}
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center">
+      <div className="mb-6 flex flex-col sm:flex-row flex-wrap gap-4 items-center">
         <Input
           type="search"
           placeholder="Buscar por título, editorial, año..."
@@ -219,6 +271,62 @@ export default function AlbumsPage() {
             <SelectItem value="title-desc">Título (Z-A)</SelectItem>
           </SelectContent>
         </Select>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" /> Filtros
+              {activeFilterCount > 0 && !playerAlbumIdsFilter && <span className="ml-2 bg-primary text-primary-foreground h-5 w-5 text-xs rounded-full flex items-center justify-center">{activeFilterCount}</span>}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-64 p-3 space-y-3">
+            <DropdownMenuLabel>Filtrar Álbumes</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div>
+              <Label htmlFor="filter-publisher" className="text-sm font-medium">Editorial</Label>
+              <Select value={filterPublisher} onValueChange={setFilterPublisher}>
+                <SelectTrigger id="filter-publisher" className="mt-1">
+                  <SelectValue placeholder="Seleccionar Editorial" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_FILTER_VALUE}>Todas las Editoriales</SelectItem>
+                  {uniquePublishers.map(pub => (
+                    <SelectItem key={pub} value={pub}>{pub}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="filter-type" className="text-sm font-medium">Tipo</Label>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger id="filter-type" className="mt-1">
+                  <SelectValue placeholder="Seleccionar Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_FILTER_VALUE}>Todos los Tipos</SelectItem>
+                  {uniqueTypes.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="filter-country" className="text-sm font-medium">País</Label>
+              <Select value={filterCountry} onValueChange={setFilterCountry}>
+                <SelectTrigger id="filter-country" className="mt-1">
+                  <SelectValue placeholder="Seleccionar País" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_FILTER_VALUE}>Todos los Países</SelectItem>
+                  {uniqueCountries.map(country => (
+                    <SelectItem key={country} value={country}>{country}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <div className="flex items-center gap-2">
             <Button variant={viewMode === 'grid' ? 'secondary': 'outline'} size="icon" onClick={() => setViewMode('grid')} aria-label="Vista de cuadrícula">
                 <LayoutGrid className="h-5 w-5" />
@@ -227,35 +335,12 @@ export default function AlbumsPage() {
                 <List className="h-5 w-5" />
             </Button>
         </div>
-         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <BarChart className="mr-2 h-4 w-4" /> Filtros
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>Alternar Columnas Visibles</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem
-                checked={visibleFilters.publisher}
-                onCheckedChange={(checked) => setVisibleFilters(prev => ({...prev, publisher: Boolean(checked)}))}
-              >
-                Editorial
-              </DropdownMenuCheckboxItem>
-               <DropdownMenuCheckboxItem
-                checked={visibleFilters.type}
-                onCheckedChange={(checked) => setVisibleFilters(prev => ({...prev, type: Boolean(checked)}))}
-              >
-                Tipo
-              </DropdownMenuCheckboxItem>
-               <DropdownMenuCheckboxItem
-                checked={visibleFilters.country}
-                onCheckedChange={(checked) => setVisibleFilters(prev => ({...prev, country: Boolean(checked)}))}
-              >
-                País
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        
+        {activeFilterCount > 0 && !playerAlbumIdsFilter && (
+          <Button variant="ghost" onClick={clearAllFilters} className="text-sm">
+            <XIcon className="mr-2 h-4 w-4" /> Limpiar Todos los Filtros
+          </Button>
+        )}
       </div>
 
       {filteredAndSortedAlbums.length > 0 ? (
@@ -265,8 +350,9 @@ export default function AlbumsPage() {
               key={album.id} 
               album={{
                 ...album, 
-                description: viewMode === 'list' ? album.description : (album.description ? album.description.substring(0,100) + '...' : undefined)
+                description: viewMode === 'list' || !album.description ? album.description : album.description.substring(0,100) + '...'
               }}
+              viewMode={viewMode}
               onViewAlbum={handleViewAlbum}
               onEditAlbum={openEditAlbumDialog}
               onDeleteAlbum={handleDeleteAlbumRequest}
@@ -276,7 +362,9 @@ export default function AlbumsPage() {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-xl text-muted-foreground">No se encontraron álbumes con tus criterios de búsqueda.</p>
+          <Filter className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <p className="text-xl text-muted-foreground">No se encontraron álbumes con tus criterios.</p>
+          {activeFilterCount > 0 && <p className="text-sm text-muted-foreground mt-2">Intenta ajustar o limpiar los filtros.</p>}
         </div>
       )}
 
@@ -397,7 +485,6 @@ export default function AlbumsPage() {
                     title={`Ver Álbum: ${selectedAlbumForView.title}`}
                     className="w-full h-full rounded-md border"
                     allowFullScreen
-                    allow="autoplay; encrypted-media"
                   />
                 </div>
               ) : (
@@ -413,3 +500,4 @@ export default function AlbumsPage() {
     </div>
   );
 }
+
