@@ -7,6 +7,8 @@ export interface Album {
   description?: string;
   country?: string; // e.g. "Italy", "England"
   type?: "National Team" | "Club" | "League"; // e.g. World Cup, Serie A
+  driveLink?: string; // Link to Google Drive embeddable content
+  dataAiHint?: string; // Hint for AI image generation/search
 }
 
 export interface Player {
@@ -19,4 +21,6 @@ export interface Player {
   photoUrl: string;
   appearances?: number;
   goals?: number;
+  dataAiHint?: string;
+  title?: string; 
 }
