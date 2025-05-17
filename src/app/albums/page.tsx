@@ -23,7 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useForm, Controller } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { albumTypes } from "@/types";
+import { validAlbumTypes, NONE_ALBUM_TYPE_FORM_SENTINEL } from "@/types";
 
 const initialMockAlbums: Album[] = [
   { id: "1", title: "Copa Mundial 1998 Francia", year: 1998, publisher: "Panini", coverImage: "https://placehold.co/300x450.png", description: "Álbum oficial de cromos de la Copa Mundial de la FIFA 1998 celebrada en Francia.", country: "Francia", type: "Selección Nacional", dataAiHint: "soccer album", driveLink: "https://drive.google.com/file/d/PLACEHOLDER_DRIVE_ID_1/preview" },
@@ -80,10 +80,16 @@ export default function AlbumsPage() {
 
   const handleAddAlbum = (data: AlbumFormData) => {
     const newAlbum: Album = {
-      ...data,
-      id: Date.now().toString(), // Simple ID generation
-      year: Number(data.year), // Ensure year is a number
-      dataAiHint: `${data.title.toLowerCase()} album`, // Basic AI hint
+      id: Date.now().toString(),
+      title: data.title,
+      year: Number(data.year),
+      publisher: data.publisher,
+      coverImage: data.coverImage,
+      description: data.description,
+      country: data.country,
+      type: data.type === NONE_ALBUM_TYPE_FORM_SENTINEL ? undefined : data.type as Album['type'],
+      driveLink: data.driveLink,
+      dataAiHint: `${data.title.toLowerCase()} album`,
     };
     setAlbums(prevAlbums => [newAlbum, ...prevAlbums]);
     setShowAddAlbumDialog(false);
@@ -278,14 +284,14 @@ export default function AlbumsPage() {
                 name="type"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || undefined}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecciona un tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Ninguno</SelectItem>
-                      {albumTypes.map(type => (
-                        <SelectItem key={type} value={type!}>{type}</SelectItem>
+                      <SelectItem value={NONE_ALBUM_TYPE_FORM_SENTINEL}>Ninguno</SelectItem>
+                      {validAlbumTypes.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
