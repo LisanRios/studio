@@ -5,17 +5,19 @@ export interface Album {
   publisher: string;
   coverImage: string;
   description?: string;
-  country?: string; // e.g. "Italy", "England"
-  type?: "National Team" | "Club" | "League"; // e.g. World Cup, Serie A
+  country?: string; // e.g. "Italia", "Inglaterra"
+  type?: "Selección Nacional" | "Club" | "Liga"; // e.g. Copa Mundial, Serie A
   driveLink?: string; // Link to Google Drive embeddable content
   dataAiHint?: string; // Hint for AI image generation/search
 }
+
+export type PlayerPosition = "Portero" | "Defensor" | "Centrocampista" | "Delantero";
 
 export interface Player {
   id: string;
   name: string;
   team: string; // Current or most notable team
-  position: "Goalkeeper" | "Defender" | "Midfielder" | "Forward";
+  position: PlayerPosition;
   dateOfBirth: string; // ISO string format: "YYYY-MM-DD"
   nationality: string;
   photoUrl: string;

@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Album Archive',
-  description: 'A digital archive for soccer albums and player information.',
+  title: 'Archivo de Álbumes',
+  description: 'Un archivo digital para álbumes de fútbol e información de jugadores.',
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AppLayout>{children}</AppLayout>
         <Toaster />

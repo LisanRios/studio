@@ -34,7 +34,7 @@
 
     --radius: 0.5rem;
 
-    /* Sidebar specific colors */
+    /* Sidebar specific colors (can be deprecated if sidebar is fully removed or harmonized) */
     --sidebar-background: 200 10% 85%;
     --sidebar-foreground: 200 10% 25%;
     --sidebar-primary: 190 31% 41%;
@@ -52,50 +52,49 @@
   }
 
   .dark {
-    /* Define dark theme colors if needed, for now keeping similar structure */
-    --background: 200 10% 10%;
-    --foreground: 200 10% 90%;
+    --background: 220 15% 10%; /* Dark Slate Blue/Grey */
+    --foreground: 220 10% 90%; /* Light Grey */
 
-    --card: 200 10% 15%;
-    --card-foreground: 200 10% 90%;
+    --card: 220 15% 15%; /* Slightly lighter than background */
+    --card-foreground: 220 10% 90%;
 
-    --popover: 200 10% 15%;
-    --popover-foreground: 200 10% 90%;
+    --popover: 220 15% 12%; /* Consistent with card or slightly darker */
+    --popover-foreground: 220 10% 90%;
 
-    --primary: 190 31% 51%; 
-    --primary-foreground: 190 25% 95%;
+    --primary: 190 31% 55%;  /* Brighter Teal for dark mode */
+    --primary-foreground: 210 20% 98%; /* Almost white for high contrast */
 
-    --secondary: 200 10% 25%;
-    --secondary-foreground: 200 10% 90%;
+    --secondary: 220 15% 20%; /* A step lighter than background */
+    --secondary-foreground: 220 10% 85%; /* Slightly dimmer than main foreground */
 
-    --muted: 200 10% 30%;
-    --muted-foreground: 200 10% 60%;
+    --muted: 220 10% 30%; /* Darker, less prominent grey */
+    --muted-foreground: 220 10% 65%; /* Lighter grey for muted text */
 
-    --accent: 181 25% 59%;
-    --accent-foreground: 181 20% 95%;
+    --accent: 181 25% 55%; /* Brighter Cadet Blue for dark mode */
+    --accent-foreground: 210 20% 98%;
 
-    --destructive: 0 70% 50%;
+    --destructive: 0 65% 55%; /* Darker, saturated red */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 200 10% 30%;
-    --input: 200 10% 30%;
-    --ring: 190 31% 51%;
+    --border: 220 10% 25%; /* Visible but not stark border */
+    --input: 220 10% 25%; /* Same as border for input fields */
+    --ring: 190 31% 55%; /* Primary color for ring */
 
-    /* Sidebar specific colors for dark theme */
-    --sidebar-background: 200 10% 12%;
-    --sidebar-foreground: 200 10% 88%;
-    --sidebar-primary: 190 31% 51%;
+    /* Sidebar specific colors for dark theme (can be deprecated if sidebar is fully removed or harmonized) */
+    --sidebar-background: 220 15% 12%;
+    --sidebar-foreground: 220 10% 88%;
+    --sidebar-primary: 190 31% 55%;
     --sidebar-primary-foreground: 190 25% 95%;
-    --sidebar-accent: 181 25% 59%;
+    --sidebar-accent: 181 25% 55%;
     --sidebar-accent-foreground: 181 20% 95%;
-    --sidebar-border: 200 10% 25%;
-    --sidebar-ring: 190 31% 51%;
+    --sidebar-border: 220 10% 25%;
+    --sidebar-ring: 190 31% 55%;
     
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 12 70% 65%;
+    --chart-2: 173 50% 45%;
+    --chart-3: 197 30% 30%;
+    --chart-4: 43 70% 70%;
+    --chart-5: 27 80% 70%;
   }
 }
 

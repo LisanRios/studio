@@ -9,13 +9,16 @@ import { Button } from "@/components/ui/button";
 import { XIcon, FilterIcon } from "lucide-react";
 
 const mockPlayers: Player[] = [
-  { id: "1", name: "Zinedine Zidane", team: "Real Madrid", position: "Midfielder", dateOfBirth: "1972-06-23", nationality: "French", photoUrl: "https://placehold.co/300x300.png", appearances: 789, goals: 156, dataAiHint: "zidane portrait" },
-  { id: "2", title: "Lionel Messi", name: "Lionel Messi", team: "Inter Miami", position: "Forward", dateOfBirth: "1987-06-24", nationality: "Argentine", photoUrl: "https://placehold.co/300x300.png", appearances: 853, goals: 704, dataAiHint: "messi playing" },
-  { id: "3", title: "Cristiano Ronaldo", name: "Cristiano Ronaldo", team: "Al Nassr", position: "Forward", dateOfBirth: "1985-02-05", nationality: "Portuguese", photoUrl: "https://placehold.co/300x300.png", appearances: 950, goals: 701, dataAiHint: "ronaldo celebration" },
-  { id: "4", title: "Paolo Maldini", name: "Paolo Maldini", team: "AC Milan", position: "Defender", dateOfBirth: "1968-06-26", nationality: "Italian", photoUrl: "https://placehold.co/300x300.png", appearances: 902, goals: 33, dataAiHint: "maldini defending" },
-  { id: "5", title: "Pelé", name: "Pelé", team: "Santos", position: "Forward", dateOfBirth: "1940-10-23", nationality: "Brazilian", photoUrl: "https://placehold.co/300x300.png", appearances: 700, goals: 650, dataAiHint: "pele retro" },
-  { id: "6", title: "Diego Maradona", name: "Diego Maradona", team: "Napoli", position: "Midfielder", dateOfBirth: "1960-10-30", nationality: "Argentine", photoUrl: "https://placehold.co/300x300.png", appearances: 588, goals: 312, dataAiHint: "maradona iconic" },
+  { id: "1", name: "Zinedine Zidane", team: "Real Madrid", position: "Centrocampista", dateOfBirth: "1972-06-23", nationality: "Francés", photoUrl: "https://placehold.co/300x300.png", appearances: 789, goals: 156, dataAiHint: "zidane portrait" },
+  { id: "2", title: "Lionel Messi", name: "Lionel Messi", team: "Inter Miami", position: "Delantero", dateOfBirth: "1987-06-24", nationality: "Argentino", photoUrl: "https://placehold.co/300x300.png", appearances: 853, goals: 704, dataAiHint: "messi playing" },
+  { id: "3", title: "Cristiano Ronaldo", name: "Cristiano Ronaldo", team: "Al Nassr", position: "Delantero", dateOfBirth: "1985-02-05", nationality: "Portugués", photoUrl: "https://placehold.co/300x300.png", appearances: 950, goals: 701, dataAiHint: "ronaldo celebration" },
+  { id: "4", title: "Paolo Maldini", name: "Paolo Maldini", team: "AC Milan", position: "Defensor", dateOfBirth: "1968-06-26", nationality: "Italiano", photoUrl: "https://placehold.co/300x300.png", appearances: 902, goals: 33, dataAiHint: "maldini defending" },
+  { id: "5", title: "Pelé", name: "Pelé", team: "Santos", position: "Delantero", dateOfBirth: "1940-10-23", nationality: "Brasileño", photoUrl: "https://placehold.co/300x300.png", appearances: 700, goals: 650, dataAiHint: "pele retro" },
+  { id: "6", title: "Diego Maradona", name: "Diego Maradona", team: "Napoli", position: "Centrocampista", dateOfBirth: "1960-10-30", nationality: "Argentino", photoUrl: "https://placehold.co/300x300.png", appearances: 588, goals: 312, dataAiHint: "maradona iconic" },
 ];
+
+// Actualizar tipos de Player para español si es necesario en el futuro.
+// Por ahora, los datos `position` ya están en español en `mockPlayers`.
 
 const uniqueTeams = Array.from(new Set(mockPlayers.map(p => p.team))).sort();
 const uniquePositions = Array.from(new Set(mockPlayers.map(p => p.position))).sort();
@@ -55,43 +58,43 @@ export default function PlayersPage() {
   return (
     <div className="container mx-auto py-8">
       <header className="mb-8">
-        <h1 className="text-4xl font-bold text-primary mb-2">Soccer Players</h1>
-        <p className="text-lg text-muted-foreground">Discover and learn about legendary soccer players.</p>
+        <h1 className="text-4xl font-bold text-primary mb-2">Jugadores de Fútbol</h1>
+        <p className="text-lg text-muted-foreground">Descubre y aprende sobre legendarios jugadores de fútbol.</p>
       </header>
 
       <div className="mb-6 p-4 bg-card rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <Input
             type="search"
-            placeholder="Search by player name..."
+            placeholder="Buscar por nombre de jugador..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="lg:col-span-2"
           />
           <Select value={filters.position} onValueChange={(value) => handleFilterChange("position", value)}>
-            <SelectTrigger><SelectValue placeholder="Filter by Position" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Filtrar por Posición" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Positions</SelectItem>
+              <SelectItem value="all">Todas las Posiciones</SelectItem>
               {uniquePositions.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
             </SelectContent>
           </Select>
            <Select value={filters.nationality} onValueChange={(value) => handleFilterChange("nationality", value)}>
-            <SelectTrigger><SelectValue placeholder="Filter by Nationality" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Filtrar por Nacionalidad" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Nationalities</SelectItem>
+              <SelectItem value="all">Todas las Nacionalidades</SelectItem>
               {uniqueNationalities.map(nat => <SelectItem key={nat} value={nat}>{nat}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filters.team} onValueChange={(value) => handleFilterChange("team", value)}>
-            <SelectTrigger><SelectValue placeholder="Filter by Team" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Filtrar por Equipo" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Teams</SelectItem>
+              <SelectItem value="all">Todos los Equipos</SelectItem>
               {uniqueTeams.map(team => <SelectItem key={team} value={team}>{team}</SelectItem>)}
             </SelectContent>
           </Select>
           {activeFilterCount > 0 && (
             <Button onClick={clearFilters} variant="ghost" className="text-sm md:col-start-4">
-              <XIcon className="w-4 h-4 mr-1" /> Clear Filters ({activeFilterCount})
+              <XIcon className="w-4 h-4 mr-1" /> Limpiar Filtros ({activeFilterCount})
             </Button>
           )}
         </div>
@@ -106,8 +109,8 @@ export default function PlayersPage() {
       ) : (
         <div className="text-center py-12">
           <FilterIcon className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <p className="text-xl text-muted-foreground">No players found matching your criteria.</p>
-          <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
+          <p className="text-xl text-muted-foreground">No se encontraron jugadores con tus criterios.</p>
+          <p className="text-sm text-muted-foreground">Intenta ajustar tu búsqueda o filtros.</p>
         </div>
       )}
     </div>
@@ -115,6 +118,10 @@ export default function PlayersPage() {
 }
 
 // Augment Player interface in PlayerCard props to include dataAiHint & title (if needed for search)
+// No es necesario modificar esto ya que `Player` en `types/index.ts` ya incluye estos campos.
+// Si se necesitaran traducciones para los valores de 'position', se haría en `types/index.ts`
+// o se manejaría la lógica de traducción en el componente.
+// Por ahora, los valores de 'position' en `mockPlayers` ya están en español.
 declare module "@/types" {
   interface Player {
     dataAiHint?: string;
