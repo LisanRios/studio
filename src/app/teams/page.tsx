@@ -11,12 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { XIcon, FilterIcon, PlusCircle, Pencil, Trash2, Shield, Globe, CalendarDays, Users, Landmark, Trophy } from "lucide-react";
+import { XIcon, FilterIcon, PlusCircle, Pencil, Trash2, Shield, Globe, CalendarDays, Users, Landmark, Trophy, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useForm, Controller } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import Image from "next/image";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -416,3 +417,5 @@ export default function TeamsPage() {
     </div>
   );
 }
+
+    
