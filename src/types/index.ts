@@ -88,7 +88,7 @@ export type PlayerFormData = {
   photoUrl: string;
   appearances?: number;
   goals?: number;
-  albumIds?: string[]; // Changed from albumIdsInput
+  albumIds?: string[]; 
 
   teamsHistoryInput?: string; // e.g., "Real Madrid (2009-2018), Juventus (2018-2021)"
   height?: number;
@@ -111,6 +111,31 @@ export type PlayerFormData = {
   speed_gk?: number;
   positioning_gk?: number;
 };
+
+export interface Team {
+  id: string;
+  name: string;
+  country: string;
+  foundationYear: number;
+  stadiumName: string;
+  stadiumCapacity?: number;
+  logoUrl: string;
+  titles?: string[]; // Array of titles, e.g., ["La Liga 2022-23", "Copa del Rey 2021"]
+  albumIds?: string[]; // IDs of albums the team appears in
+  dataAiHint?: string; // For AI image generation/search for logo
+}
+
+export type TeamFormData = {
+  name: string;
+  country: string;
+  foundationYear: number;
+  stadiumName: string;
+  stadiumCapacity?: number;
+  logoUrl: string;
+  titlesInput?: string; // Comma-separated string for titles
+  albumIds?: string[];
+};
+
 
 // Helper function to check if a player is a goalkeeper
 export function isGoalkeeper(position: PlayerPosition): boolean {
@@ -138,7 +163,7 @@ export function calculateTotalSkills(player: Pick<Player, 'position' | 'skills'>
   return total;
 }
 
-// Helper to parse teamsHistoryInput string
+// Helper to parse teamsHistoryInput string for Players
 export function parseTeamsHistoryInput(input?: string): TeamHistoryEntry[] | undefined {
   if (!input || input.trim() === "") return undefined;
   return input.split(',').map(entryStr => {
@@ -146,13 +171,24 @@ export function parseTeamsHistoryInput(input?: string): TeamHistoryEntry[] | und
     if (match && match.length === 3) {
       return { teamName: match[1].trim(), yearsPlayed: match[2].trim() };
     }
-    // Fallback if parsing fails for an entry, though a stricter validation might be better
     return { teamName: entryStr.trim(), yearsPlayed: "N/A" };
-  }).filter(entry => entry.teamName); // Filter out potentially empty entries
+  }).filter(entry => entry.teamName); 
 }
 
-// Helper to format teamsHistory for form input
+// Helper to format teamsHistory for Player form input
 export function formatTeamsHistoryForInput(teams?: TeamHistoryEntry[]): string {
   if (!teams || teams.length === 0) return "";
   return teams.map(entry => `${entry.teamName} (${entry.yearsPlayed})`).join(', ');
+}
+
+// Helper to parse titlesInput string for Teams
+export function parseTitlesInput(input?: string): string[] | undefined {
+  if (!input || input.trim() === "") return undefined;
+  return input.split(',').map(title => title.trim()).filter(title => title);
+}
+
+// Helper to format titles for Team form input
+export function formatTitlesForInput(titles?: string[]): string {
+  if (!titles || titles.length === 0) return "";
+  return titles.join(', ');
 }

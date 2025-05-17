@@ -8,7 +8,7 @@ import { AlbumCard } from "@/components/albums/album-card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { LayoutGrid, List, PlusCircle, Pencil, Trash2, UserX, Filter, XIcon, Eye } from "lucide-react";
+import { LayoutGrid, List, PlusCircle, Pencil, Trash2, UserX, Filter, XIcon, Eye, Users as TeamIcon } from "lucide-react"; // Users icon for Team filter
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -62,6 +62,9 @@ export default function AlbumsPage() {
 
   const playerAlbumIdsFilter = searchParams.get('playerAlbumIds');
   const playerNameFilter = searchParams.get('playerName');
+  const teamAlbumIdsFilter = searchParams.get('teamAlbumIds'); // For team filtering
+  const teamNameFilter = searchParams.get('teamName'); // For team filtering
+
 
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<AlbumFormData>({
     defaultValues: {
@@ -178,8 +181,16 @@ export default function AlbumsPage() {
     setEditingAlbum(null);
   };
 
-  const clearPlayerFilter = () => {
-    router.push('/albums');
+  const clearParamFilter = (paramToRemove: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (paramToRemove === 'player') {
+      params.delete('playerAlbumIds');
+      params.delete('playerName');
+    } else if (paramToRemove === 'team') {
+      params.delete('teamAlbumIds');
+      params.delete('teamName');
+    }
+    router.push(`/albums?${params.toString()}`);
   };
 
   const clearAllFilters = () => {
@@ -188,15 +199,19 @@ export default function AlbumsPage() {
     setFilterPublisher(ALL_FILTER_VALUE);
     setFilterType(ALL_FILTER_VALUE);
     setFilterCountry(ALL_FILTER_VALUE);
-    if (playerAlbumIdsFilter) clearPlayerFilter();
+    if (playerAlbumIdsFilter || teamAlbumIdsFilter) {
+        const params = new URLSearchParams(); // Clears all specific filters
+        router.push(`/albums?${params.toString()}`);
+    }
   };
-
+  
+  const activeSpecialFilter = playerAlbumIdsFilter || teamAlbumIdsFilter;
+  
   const activeFilterCount = [
     searchTerm,
     filterPublisher !== ALL_FILTER_VALUE,
     filterType !== ALL_FILTER_VALUE,
     filterCountry !== ALL_FILTER_VALUE,
-    playerAlbumIdsFilter,
   ].filter(Boolean).length;
 
 
@@ -206,7 +221,11 @@ export default function AlbumsPage() {
     if (playerAlbumIdsFilter) {
       const albumIdsToShow = playerAlbumIdsFilter.split(',');
       filtered = filtered.filter(album => albumIdsToShow.includes(album.id));
+    } else if (teamAlbumIdsFilter) { // Ensure only one special filter active at a time
+      const albumIdsToShow = teamAlbumIdsFilter.split(',');
+      filtered = filtered.filter(album => albumIdsToShow.includes(album.id));
     }
+
 
     if (filterPublisher !== ALL_FILTER_VALUE) {
       filtered = filtered.filter(album => album.publisher === filterPublisher);
@@ -231,7 +250,7 @@ export default function AlbumsPage() {
       case "title-desc": filtered.sort((a, b) => b.title.localeCompare(a.title)); break;
     }
     return filtered;
-  }, [searchTerm, sortOption, albumsData, playerAlbumIdsFilter, filterPublisher, filterType, filterCountry]);
+  }, [searchTerm, sortOption, albumsData, playerAlbumIdsFilter, teamAlbumIdsFilter, filterPublisher, filterType, filterCountry]);
 
 
   return (
@@ -246,11 +265,22 @@ export default function AlbumsPage() {
           <p className="text-accent-foreground">
             Mostrando álbumes de <strong className="font-semibold">{playerNameFilter}</strong>.
           </p>
-          <Button variant="ghost" onClick={clearPlayerFilter} className="text-accent-foreground hover:bg-accent/30">
+          <Button variant="ghost" onClick={() => clearParamFilter('player')} className="text-accent-foreground hover:bg-accent/30">
             <UserX className="mr-2 h-4 w-4" /> Limpiar Filtro de Jugador
           </Button>
         </div>
       )}
+      {teamNameFilter && (
+        <div className="mb-6 p-4 bg-accent/20 rounded-lg shadow-md flex justify-between items-center">
+          <p className="text-accent-foreground">
+            Mostrando álbumes relacionados con <strong className="font-semibold">{teamNameFilter}</strong>.
+          </p>
+          <Button variant="ghost" onClick={() => clearParamFilter('team')} className="text-accent-foreground hover:bg-accent/30">
+            <TeamIcon className="mr-2 h-4 w-4" /> Limpiar Filtro de Equipo
+          </Button>
+        </div>
+      )}
+
 
       <div className="mb-6 flex flex-col sm:flex-row flex-wrap gap-4 items-center">
         <Input
@@ -259,6 +289,7 @@ export default function AlbumsPage() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm flex-grow"
+          disabled={!!activeSpecialFilter} // Disable search if player/team filter is active
         />
         <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
           <SelectTrigger className="w-full sm:w-[200px]">
@@ -274,9 +305,9 @@ export default function AlbumsPage() {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline">
+            <Button variant="outline" disabled={!!activeSpecialFilter}> {/* Disable filters if player/team filter is active */}
               <Filter className="mr-2 h-4 w-4" /> Filtros
-              {activeFilterCount > 0 && !playerAlbumIdsFilter && <span className="ml-2 bg-primary text-primary-foreground h-5 w-5 text-xs rounded-full flex items-center justify-center">{activeFilterCount}</span>}
+              {activeFilterCount > 0 && !activeSpecialFilter && <span className="ml-2 bg-primary text-primary-foreground h-5 w-5 text-xs rounded-full flex items-center justify-center">{activeFilterCount}</span>}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-64 p-3 space-y-3">
@@ -336,9 +367,9 @@ export default function AlbumsPage() {
             </Button>
         </div>
         
-        {activeFilterCount > 0 && !playerAlbumIdsFilter && (
+        {activeFilterCount > 0 && !activeSpecialFilter && (
           <Button variant="ghost" onClick={clearAllFilters} className="text-sm">
-            <XIcon className="mr-2 h-4 w-4" /> Limpiar Todos los Filtros
+            <XIcon className="mr-2 h-4 w-4" /> Limpiar Filtros Regulares
           </Button>
         )}
       </div>
@@ -364,7 +395,7 @@ export default function AlbumsPage() {
         <div className="text-center py-12">
           <Filter className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <p className="text-xl text-muted-foreground">No se encontraron álbumes con tus criterios.</p>
-          {activeFilterCount > 0 && <p className="text-sm text-muted-foreground mt-2">Intenta ajustar o limpiar los filtros.</p>}
+          {(activeFilterCount > 0 || activeSpecialFilter) && <p className="text-sm text-muted-foreground mt-2">Intenta ajustar o limpiar los filtros.</p>}
         </div>
       )}
 
@@ -500,4 +531,3 @@ export default function AlbumsPage() {
     </div>
   );
 }
-

@@ -1,10 +1,11 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Users, LayoutDashboard, Menu, Vault, LogIn, LogOut } from 'lucide-react';
+import { BookOpen, Users, LayoutDashboard, Menu, Vault, LogIn, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -23,13 +24,14 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-  requiresAuth?: boolean; // Nuevo: para elementos que requieren autenticación
+  requiresAuth?: boolean; 
 }
 
 const navItems: NavItem[] = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/albums', label: 'Álbumes', icon: BookOpen },
   { href: '/players', label: 'Jugadores', icon: Users },
+  { href: '/teams', label: 'Equipos', icon: Shield },
 ];
 
 const Logo = () => (
@@ -49,7 +51,7 @@ function Navbar() {
   const renderNavItems = (isMobile = false) => {
     return navItems.map((item) => {
       if (item.requiresAuth && !user) {
-        return null; // No mostrar si requiere autenticación y no hay usuario
+        return null; 
       }
       return (
         <Link
@@ -92,8 +94,6 @@ function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
-                    {/* Puedes añadir una imagen de avatar si la tienes */}
-                    {/* <AvatarImage src="/path-to-avatar.png" alt={user.username} /> */}
                     <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -102,15 +102,9 @@ function Navbar() {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">Hola, {user.username}</p>
-                    {/* <p className="text-xs leading-none text-muted-foreground">
-                      {user.email} // Si tuvieras email
-                    </p> */}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* <DropdownMenuItem>Perfil</DropdownMenuItem> */}
-                {/* <DropdownMenuItem>Ajustes</DropdownMenuItem> */}
-                {/* <DropdownMenuSeparator /> */}
                 <DropdownMenuItem onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar Sesión
