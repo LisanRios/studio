@@ -3,16 +3,16 @@
 
 import type { Player } from "@/types";
 import Image from "next/image";
-// import { useRouter } from "next/navigation"; // No longer needed for direct navigation
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, ShieldAlert, MapPin, Shirt, Trophy, Info, Pencil, Trash2 } from "lucide-react"; 
+import { CalendarDays, ShieldAlert, MapPin, Shirt, Trophy, Info, Pencil, Trash2, BookOpen } from "lucide-react"; 
 import { useState, useEffect } from "react";
 
 interface PlayerCardProps {
   player: Player;
-  onViewPlayerDetails: (player: Player) => void; // Changed from routing to opening details
+  onViewPlayerDetails: (player: Player) => void;
+  onViewPlayerAlbums: (player: Player) => void; // New prop
   onEditPlayer: (player: Player) => void;
   onDeletePlayer: (playerId: string) => void;
   isUserAuthenticated: boolean;
@@ -29,7 +29,7 @@ function calculateAge(dateOfBirth: string): number {
   return age;
 }
 
-export function PlayerCard({ player, onViewPlayerDetails, onEditPlayer, onDeletePlayer, isUserAuthenticated }: PlayerCardProps) {
+export function PlayerCard({ player, onViewPlayerDetails, onViewPlayerAlbums, onEditPlayer, onDeletePlayer, isUserAuthenticated }: PlayerCardProps) {
   const [displayInfo, setDisplayInfo] = useState<{ age: number; formattedBirthDate: string } | null>(null);
 
   useEffect(() => {
@@ -43,16 +43,23 @@ export function PlayerCard({ player, onViewPlayerDetails, onEditPlayer, onDelete
     setDisplayInfo({ age, formattedBirthDate });
   }, [player.dateOfBirth]);
 
-  const handleCardClick = () => {
+  const handleViewDetailsClick = () => {
     onViewPlayerDetails(player);
+  };
+
+  const handleViewAlbumsClick = () => {
+    if (player.albumIds && player.albumIds.length > 0) {
+      onViewPlayerAlbums(player);
+    }
+    // Optionally, you could show a toast or disable the button if no albumIds exist.
   };
 
   return (
     <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
       <div 
         className="group relative cursor-pointer"
-        onClick={handleCardClick}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(); }}
+        onClick={handleViewDetailsClick} // Main card click still views details
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleViewDetailsClick(); }}
         role="button"
         tabIndex={0}
         aria-label={`Ver detalles de ${player.name}`}
@@ -106,11 +113,19 @@ export function PlayerCard({ player, onViewPlayerDetails, onEditPlayer, onDelete
           </div>
         </CardContent>
       </div>
-      <CardFooter className="p-4 bg-secondary/50 rounded-b-lg flex justify-between items-center">
-        <Button variant="outline" size="sm" onClick={handleCardClick} className="flex items-center">
-            <Info className="w-4 h-4 mr-1.5" />
-            Ver Detalles
-        </Button>
+      <CardFooter className="p-4 bg-secondary/50 rounded-b-lg flex flex-wrap justify-between items-center gap-2">
+        <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleViewDetailsClick} className="flex items-center">
+                <Info className="w-4 h-4 mr-1.5" />
+                Detalles
+            </Button>
+            {player.albumIds && player.albumIds.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleViewAlbumsClick} className="flex items-center">
+                  <BookOpen className="w-4 h-4 mr-1.5" />
+                  Álbumes
+              </Button>
+            )}
+        </div>
         {isUserAuthenticated && (
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" onClick={() => onEditPlayer(player)} aria-label={`Editar ${player.name}`}>

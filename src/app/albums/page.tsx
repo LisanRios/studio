@@ -2,13 +2,13 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-// import { useSearchParams, useRouter } from "next/navigation"; // No longer needed for player filter
+import { useSearchParams, useRouter } from "next/navigation"; // Re-added for player filter
 import type { Album, AlbumFormData } from "@/types";
 import { AlbumCard } from "@/components/albums/album-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { BarChart, LayoutGrid, List, X, PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { BarChart, LayoutGrid, List, X, PlusCircle, Pencil, Trash2, UserX } from "lucide-react"; // Added UserX
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -49,8 +49,8 @@ type SortOption = "year-desc" | "year-asc" | "title-asc" | "title-desc";
 type ViewMode = "grid" | "list";
 
 export default function AlbumsPage() {
-  // const searchParams = useSearchParams(); // Removed as player filter is gone
-  // const router = useRouter(); // Removed as player filter is gone
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -65,6 +65,9 @@ export default function AlbumsPage() {
   const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
   const [albumToDeleteId, setAlbumToDeleteId] = useState<string | null>(null);
 
+  const playerAlbumIdsFilter = searchParams.get('playerAlbumIds');
+  const playerNameFilter = searchParams.get('playerName');
+
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<AlbumFormData>({
     defaultValues: {
       title: "",
@@ -73,7 +76,7 @@ export default function AlbumsPage() {
       coverImage: "https://placehold.co/300x450.png",
       description: "",
       country: "",
-      type: NONE_ALBUM_TYPE_FORM_SENTINEL, // Use sentinel for "Ninguno"
+      type: NONE_ALBUM_TYPE_FORM_SENTINEL,
       driveLink: ""
     }
   });
@@ -160,8 +163,17 @@ export default function AlbumsPage() {
     setEditingAlbum(null);
   };
 
+  const clearPlayerFilter = () => {
+    router.push('/albums');
+  };
+
   const filteredAndSortedAlbums = useMemo(() => {
     let filtered = [...albums];
+
+    if (playerAlbumIdsFilter) {
+      const albumIdsToShow = playerAlbumIdsFilter.split(',');
+      filtered = filtered.filter(album => albumIdsToShow.includes(album.id));
+    }
 
     filtered = filtered.filter(album =>
       album.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -176,7 +188,7 @@ export default function AlbumsPage() {
       case "title-desc": filtered.sort((a, b) => b.title.localeCompare(a.title)); break;
     }
     return filtered;
-  }, [searchTerm, sortOption, albums]);
+  }, [searchTerm, sortOption, albums, playerAlbumIdsFilter]);
 
 
   return (
@@ -185,6 +197,17 @@ export default function AlbumsPage() {
         <h1 className="text-4xl font-bold text-primary mb-2">Álbumes de Fútbol</h1>
         <p className="text-lg text-muted-foreground">Explora y descubre álbumes históricos de cromos de fútbol.</p>
       </header>
+
+      {playerNameFilter && (
+        <div className="mb-6 p-4 bg-accent/20 rounded-lg shadow-md flex justify-between items-center">
+          <p className="text-accent-foreground">
+            Mostrando álbumes de <strong className="font-semibold">{playerNameFilter}</strong>.
+          </p>
+          <Button variant="ghost" onClick={clearPlayerFilter} className="text-accent-foreground hover:bg-accent/30">
+            <UserX className="mr-2 h-4 w-4" /> Limpiar Filtro
+          </Button>
+        </div>
+      )}
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center">
         <Input
@@ -257,7 +280,6 @@ export default function AlbumsPage() {
               onEditAlbum={openEditAlbumDialog}
               onDeleteAlbum={handleDeleteAlbumRequest}
               isUserAuthenticated={!!user}
-              // Pass visibleFilters for conditional rendering inside AlbumCard if needed for list view
             />
           ))}
         </div>
