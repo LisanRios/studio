@@ -52,7 +52,7 @@ export interface Player {
   photoUrl: string;
   appearances?: number; // General career appearances
   goals?: number; // General career goals
-  albumIds?: string[]; // IDs of albums the player appears in (optional, for other uses)
+  albumIds?: string[]; // IDs of albums the player appears in
   dataAiHint?: string;
 
   // Detailed player information
@@ -88,7 +88,7 @@ export type PlayerFormData = {
   photoUrl: string;
   appearances?: number;
   goals?: number;
-  albumIdsInput?: string;
+  albumIds?: string[]; // Changed from albumIdsInput
 
   teamsHistoryInput?: string; // e.g., "Real Madrid (2009-2018), Juventus (2018-2021)"
   height?: number;

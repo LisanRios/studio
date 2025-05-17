@@ -2,13 +2,15 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation"; // Added for navigation
-import type { Player, PlayerFormData, TeamHistoryEntry, FieldPlayerSkills, GoalkeeperSkills } from "@/types";
+import { useRouter } from "next/navigation";
+import type { Player, PlayerFormData, TeamHistoryEntry, FieldPlayerSkills, GoalkeeperSkills, Album } from "@/types";
 import { PlayerCard } from "@/components/players/player-card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { XIcon, FilterIcon, PlusCircle, Pencil, Trash2, BarChartHorizontalBig, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useForm, Controller, FieldValues } from "react-hook-form";
@@ -28,30 +30,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-
-const initialMockPlayers: Player[] = [
-  { 
-    id: "1", name: "Zinedine Zidane", currentTeam: "Real Madrid", position: "Centrocampista", dateOfBirth: "1972-06-23", nationality: "Francés", photoUrl: "https://placehold.co/300x300.png", appearances: 789, goals: 156, dataAiHint: "zidane portrait", albumIds: ["1", "3"],
-    teamsHistory: [{ teamName: "Juventus", yearsPlayed: "1996-2001" }, { teamName: "Real Madrid", yearsPlayed: "2001-2006" }],
-    height: 185, weight: 80, rating: 96,
-    skills: { pace: 80, shooting: 85, passing: 92, dribbling: 91, defending: 70, physicality: 78 },
-    totalSkills: 496 
-  },
-  { 
-    id: "2", name: "Lionel Messi", currentTeam: "Inter Miami", position: "Delantero", dateOfBirth: "1987-06-24", nationality: "Argentino", photoUrl: "https://placehold.co/300x300.png", appearances: 853, goals: 704, dataAiHint: "messi playing", albumIds: ["2"],
-    teamsHistory: [{ teamName: "FC Barcelona", yearsPlayed: "2004-2021" }, { teamName: "Paris Saint-Germain", yearsPlayed: "2021-2023" }, { teamName: "Inter Miami", yearsPlayed: "2023-Present" }],
-    height: 170, weight: 72, rating: 98,
-    skills: { pace: 91, shooting: 95, passing: 93, dribbling: 97, defending: 40, physicality: 68 },
-    totalSkills: 484 
-  },
-  {
-    id: "GK1", name: "Gianluigi Buffon", currentTeam: "Parma", position: "Portero", dateOfBirth: "1978-01-28", nationality: "Italiano", photoUrl: "https://placehold.co/300x300.png", dataAiHint: "buffon goalkeeper", albumIds: ["5"],
-    teamsHistory: [{teamName: "Parma", yearsPlayed: "1995-2001"}, {teamName: "Juventus", yearsPlayed: "2001-2018"}, {teamName: "PSG", yearsPlayed: "2018-2019"}, {teamName: "Juventus", yearsPlayed: "2019-2021"}, {teamName: "Parma", yearsPlayed: "2021-2023"}],
-    height: 192, weight: 92, rating: 95,
-    skills: { diving: 94, handling: 90, kicking: 75, reflexes: 96, speed_gk: 55, positioning_gk: 93 },
-    totalSkills: 503 
-  },
-];
+import { initialMockPlayers } from "@/data/mock-players"; // Import from centralized data
+import { initialMockAlbums } from "@/data/mock-albums"; // Import albums for selection
 
 type PlayerFilters = {
   team: string;
@@ -61,6 +41,7 @@ type PlayerFilters = {
 
 export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>(initialMockPlayers);
+  const [allAlbums] = useState<Album[]>(initialMockAlbums); // For album selection
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<PlayerFilters>({ team: "all", position: "all", nationality: "all" });
   
@@ -71,7 +52,7 @@ export default function PlayersPage() {
 
   const { user } = useAuth();
   const { toast } = useToast();
-  const router = useRouter(); // Added for navigation
+  const router = useRouter();
 
   const { register, handleSubmit, control, reset, watch, formState: { errors } } = useForm<PlayerFormData>({
     defaultValues: {
@@ -83,7 +64,7 @@ export default function PlayersPage() {
       photoUrl: "https://placehold.co/300x300.png",
       appearances: 0,
       goals: 0,
-      albumIdsInput: "",
+      albumIds: [], // Default to empty array for checkboxes
       teamsHistoryInput: "",
       height: undefined,
       weight: undefined,
@@ -106,7 +87,7 @@ export default function PlayersPage() {
         photoUrl: editingPlayer.photoUrl,
         appearances: editingPlayer.appearances || 0,
         goals: editingPlayer.goals || 0,
-        albumIdsInput: editingPlayer.albumIds?.join(',') || '',
+        albumIds: editingPlayer.albumIds || [], // Use albumIds array
         teamsHistoryInput: formatTeamsHistoryForInput(editingPlayer.teamsHistory),
         height: editingPlayer.height || undefined,
         weight: editingPlayer.weight || undefined,
@@ -128,7 +109,7 @@ export default function PlayersPage() {
     } else {
       reset({
         name: "", currentTeam: "", position: "Delantero", dateOfBirth: "", nationality: "",
-        photoUrl: "https://placehold.co/300x300.png", appearances: 0, goals: 0, albumIdsInput: "",
+        photoUrl: "https://placehold.co/300x300.png", appearances: 0, goals: 0, albumIds: [], // Reset to empty array
         teamsHistoryInput: "", height: undefined, weight: undefined, rating: 75,
         pace: 70, shooting: 70, passing: 70, dribbling: 70, defending: 70, physicality: 70,
         diving: 70, handling: 70, kicking: 70, reflexes: 70, speed_gk: 70, positioning_gk: 70,
@@ -218,7 +199,7 @@ export default function PlayersPage() {
       photoUrl: data.photoUrl,
       appearances: Number(data.appearances) || undefined,
       goals: Number(data.goals) || undefined,
-      albumIds: data.albumIdsInput ? data.albumIdsInput.split(',').map(id => id.trim()).filter(id => id) : undefined,
+      albumIds: data.albumIds || [], // Use data.albumIds
       dataAiHint: `${data.name.toLowerCase()} soccer player`,
       teamsHistory: parseTeamsHistoryInput(data.teamsHistoryInput),
       height: Number(data.height) || undefined,
@@ -233,7 +214,7 @@ export default function PlayersPage() {
       const updatedPlayer: Player = {
         ...editingPlayer,
         ...playerToSave,
-        id: editingPlayer.id, // ensure id is preserved
+        id: editingPlayer.id, 
       };
       setPlayers(prevPlayers => prevPlayers.map(p => p.id === editingPlayer.id ? updatedPlayer : p));
       toast({
@@ -357,7 +338,7 @@ export default function PlayersPage() {
               key={player.id} 
               player={player} 
               onViewPlayerDetails={openPlayerDetailDialog}
-              onViewPlayerAlbums={handleViewPlayerAlbums} // Pass the handler
+              onViewPlayerAlbums={handleViewPlayerAlbums}
               onEditPlayer={openEditPlayerDialog}
               onDeletePlayer={handleDeletePlayerRequest}
               isUserAuthenticated={!!user}
@@ -463,15 +444,43 @@ export default function PlayersPage() {
                 <Input id="goals" type="number" {...register("goals", { valueAsNumber: true, min: { value: 0, message: "Debe ser un número positivo" } })} />
                 {errors.goals && <p className="text-sm text-destructive mt-1">{errors.goals.message}</p>}
               </div>
-               <div>
-                <Label htmlFor="albumIdsInput">IDs de Álbumes (separados por coma)</Label>
-                <Input id="albumIdsInput" {...register("albumIdsInput")} placeholder="Ej: 1,2,3" />
-              </div>
             </div>
 
             <div>
               <Label htmlFor="teamsHistoryInput">Historial de Equipos (Formato: Equipo1 (Años1), Equipo2 (Años2))</Label>
               <Textarea id="teamsHistoryInput" {...register("teamsHistoryInput")} placeholder="Ej: Real Madrid (2009-2018), Juventus (2018-2021)" />
+            </div>
+
+            <div>
+              <Label>Álbumes Asociados</Label>
+              <Controller
+                name="albumIds"
+                control={control}
+                defaultValue={[]}
+                render={({ field }) => (
+                  <ScrollArea className="h-40 w-full rounded-md border p-2 mt-1">
+                    {allAlbums.map((album) => (
+                      <div key={album.id} className="flex items-center space-x-2 mb-1">
+                        <Checkbox
+                          id={`album-select-${album.id}`}
+                          checked={field.value?.includes(album.id)}
+                          onCheckedChange={(checked) => {
+                            const currentAlbumIds = field.value || [];
+                            if (checked) {
+                              field.onChange([...currentAlbumIds, album.id]);
+                            } else {
+                              field.onChange(currentAlbumIds.filter((id) => id !== album.id));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`album-select-${album.id}`} className="font-normal text-sm">
+                          {album.title} ({album.year})
+                        </Label>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                )}
+              />
             </div>
             
             <Separator className="my-6"/>
