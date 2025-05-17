@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, ListUsers, AlertTriangle } from 'lucide-react';
+import { UserPlus, List, AlertTriangle } from 'lucide-react'; // Corrected ListUsers to List
 import type { UserCredentials } from '@/types';
 import { useForm } from 'react-hook-form';
 
@@ -91,7 +91,7 @@ export default function ManageUsersPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl flex items-center">
-              <ListUsers className="mr-2 h-6 w-6 text-primary" /> Usuarios Existentes
+              <List className="mr-2 h-6 w-6 text-primary" /> Usuarios Existentes {/* Corrected ListUsers to List */}
             </CardTitle>
             <CardDescription>Lista de usuarios actualmente en el sistema (en memoria).</CardDescription>
           </CardHeader>
