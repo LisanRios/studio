@@ -9,16 +9,13 @@ import { Button } from "@/components/ui/button";
 import { XIcon, FilterIcon } from "lucide-react";
 
 const mockPlayers: Player[] = [
-  { id: "1", name: "Zinedine Zidane", team: "Real Madrid", position: "Centrocampista", dateOfBirth: "1972-06-23", nationality: "Francés", photoUrl: "https://placehold.co/300x300.png", appearances: 789, goals: 156, dataAiHint: "zidane portrait" },
-  { id: "2", title: "Lionel Messi", name: "Lionel Messi", team: "Inter Miami", position: "Delantero", dateOfBirth: "1987-06-24", nationality: "Argentino", photoUrl: "https://placehold.co/300x300.png", appearances: 853, goals: 704, dataAiHint: "messi playing" },
-  { id: "3", title: "Cristiano Ronaldo", name: "Cristiano Ronaldo", team: "Al Nassr", position: "Delantero", dateOfBirth: "1985-02-05", nationality: "Portugués", photoUrl: "https://placehold.co/300x300.png", appearances: 950, goals: 701, dataAiHint: "ronaldo celebration" },
-  { id: "4", title: "Paolo Maldini", name: "Paolo Maldini", team: "AC Milan", position: "Defensor", dateOfBirth: "1968-06-26", nationality: "Italiano", photoUrl: "https://placehold.co/300x300.png", appearances: 902, goals: 33, dataAiHint: "maldini defending" },
+  { id: "1", name: "Zinedine Zidane", team: "Real Madrid", position: "Centrocampista", dateOfBirth: "1972-06-23", nationality: "Francés", photoUrl: "https://placehold.co/300x300.png", appearances: 789, goals: 156, dataAiHint: "zidane portrait", albumIds: ["1", "3"] },
+  { id: "2", title: "Lionel Messi", name: "Lionel Messi", team: "Inter Miami", position: "Delantero", dateOfBirth: "1987-06-24", nationality: "Argentino", photoUrl: "https://placehold.co/300x300.png", appearances: 853, goals: 704, dataAiHint: "messi playing", albumIds: ["2"] },
+  { id: "3", title: "Cristiano Ronaldo", name: "Cristiano Ronaldo", team: "Al Nassr", position: "Delantero", dateOfBirth: "1985-02-05", nationality: "Portugués", photoUrl: "https://placehold.co/300x300.png", appearances: 950, goals: 701, dataAiHint: "ronaldo celebration", albumIds: ["2", "4"] },
+  { id: "4", title: "Paolo Maldini", name: "Paolo Maldini", team: "AC Milan", position: "Defensor", dateOfBirth: "1968-06-26", nationality: "Italiano", photoUrl: "https://placehold.co/300x300.png", appearances: 902, goals: 33, dataAiHint: "maldini defending", albumIds: ["5"] },
   { id: "5", title: "Pelé", name: "Pelé", team: "Santos", position: "Delantero", dateOfBirth: "1940-10-23", nationality: "Brasileño", photoUrl: "https://placehold.co/300x300.png", appearances: 700, goals: 650, dataAiHint: "pele retro" },
-  { id: "6", title: "Diego Maradona", name: "Diego Maradona", team: "Napoli", position: "Centrocampista", dateOfBirth: "1960-10-30", nationality: "Argentino", photoUrl: "https://placehold.co/300x300.png", appearances: 588, goals: 312, dataAiHint: "maradona iconic" },
+  { id: "6", title: "Diego Maradona", name: "Diego Maradona", team: "Napoli", position: "Centrocampista", dateOfBirth: "1960-10-30", nationality: "Argentino", photoUrl: "https://placehold.co/300x300.png", appearances: 588, goals: 312, dataAiHint: "maradona iconic", albumIds: ["1", "5", "6"] },
 ];
-
-// Actualizar tipos de Player para español si es necesario en el futuro.
-// Por ahora, los datos `position` ya están en español en `mockPlayers`.
 
 const uniqueTeams = Array.from(new Set(mockPlayers.map(p => p.team))).sort();
 const uniquePositions = Array.from(new Set(mockPlayers.map(p => p.position))).sort();
@@ -115,16 +112,4 @@ export default function PlayersPage() {
       )}
     </div>
   );
-}
-
-// Augment Player interface in PlayerCard props to include dataAiHint & title (if needed for search)
-// No es necesario modificar esto ya que `Player` en `types/index.ts` ya incluye estos campos.
-// Si se necesitaran traducciones para los valores de 'position', se haría en `types/index.ts`
-// o se manejaría la lógica de traducción en el componente.
-// Por ahora, los valores de 'position' en `mockPlayers` ya están en español.
-declare module "@/types" {
-  interface Player {
-    dataAiHint?: string;
-    title?: string; // If title is used for players
-  }
 }

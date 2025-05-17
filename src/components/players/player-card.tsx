@@ -2,9 +2,10 @@
 
 import type { Player } from "@/types";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, ShieldAlert, MapPin, Shirt, Trophy } from "lucide-react"; // Added Shirt for appearances, Trophy for goals
+import { CalendarDays, ShieldAlert, MapPin, Shirt, Trophy, BookOpenCheck } from "lucide-react"; 
 
 interface PlayerCardProps {
   player: Player;
@@ -22,17 +23,35 @@ function calculateAge(dateOfBirth: string): number {
 }
 
 export function PlayerCard({ player }: PlayerCardProps) {
+  const router = useRouter();
+
+  const handlePlayerCardClick = () => {
+    if (player.albumIds && player.albumIds.length > 0) {
+      const albumIdsQuery = player.albumIds.join(',');
+      const playerNameQuery = encodeURIComponent(player.name);
+      router.push(`/albums?playerAlbumIds=${albumIdsQuery}&playerName=${playerNameQuery}`);
+    }
+    // Opcional: mostrar toast si no hay albumIds. Por ahora no se hace nada.
+  };
+
   return (
-    <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
+    <Card 
+      className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg cursor-pointer group"
+      onClick={handlePlayerCardClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handlePlayerCardClick(); }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver álbumes de ${player.name}`}
+    >
       <CardHeader className="p-0 relative">
         <div className="aspect-square w-full relative">
           <Image
             src={player.photoUrl}
             alt={`Foto de ${player.name}`}
-            layout="fill" // 'layout' prop is deprecated, use 'fill', 'fixed', 'intrinsic', or 'responsive'.
-            objectFit="cover" // 'objectFit' is deprecated, use 'style={{ objectFit: "cover" }}'
+            fill
             style={{ objectFit: 'cover' }}
             className="rounded-t-lg"
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             data-ai-hint={player.dataAiHint || "jugador futbol"}
           />
         </div>
@@ -52,7 +71,7 @@ export function PlayerCard({ player }: PlayerCardProps) {
           </div>
           <div className="flex items-center">
             <CalendarDays className="w-4 h-4 mr-2 text-accent" />
-            <span>Edad: {calculateAge(player.dateOfBirth)} (Nacimiento: {new Date(player.dateOfBirth).toLocaleDateString('es-ES')})</span>
+            <span>Edad: {calculateAge(player.dateOfBirth)} (Nac.: {new Date(player.dateOfBirth).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric'})})</span>
           </div>
           {player.appearances !== undefined && (
             <div className="flex items-center">
@@ -68,10 +87,16 @@ export function PlayerCard({ player }: PlayerCardProps) {
           )}
         </div>
       </CardContent>
-      <CardFooter className="p-6 bg-secondary/50 rounded-b-lg">
+      <CardFooter className="p-6 bg-secondary/50 rounded-b-lg flex justify-between items-center">
         <Badge variant={player.position === "Delantero" ? "default" : "secondary"}>
           {player.position}
         </Badge>
+        {player.albumIds && player.albumIds.length > 0 && (
+          <Badge variant="outline" className="flex items-center">
+            <BookOpenCheck className="w-3 h-3 mr-1.5" />
+            Ver en Álbumes
+          </Badge>
+        )}
       </CardFooter>
     </Card>
   );

@@ -2,11 +2,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import type { Album } from "@/types";
 import { AlbumCard } from "@/components/albums/album-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { BarChart, LayoutGrid, List } from "lucide-react";
+import { BarChart, LayoutGrid, List, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,18 +32,37 @@ type SortOption = "year-desc" | "year-asc" | "title-asc" | "title-desc";
 type ViewMode = "grid" | "list";
 
 export default function AlbumsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("year-desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [visibleFilters, setVisibleFilters] = useState<{ publisher: boolean; type: boolean; country: boolean; }>({ publisher: true, type: true, country: true});
   const [selectedAlbumForView, setSelectedAlbumForView] = useState<Album | null>(null);
 
+  const playerAlbumIdsFilter = useMemo(() => {
+    const idsParam = searchParams.get("playerAlbumIds");
+    return idsParam ? idsParam.split(',') : null;
+  }, [searchParams]);
+
+  const playerNameFilter = useMemo(() => {
+    const nameParam = searchParams.get("playerName");
+    return nameParam ? decodeURIComponent(nameParam) : null;
+  }, [searchParams]);
+
   const handleViewAlbum = (album: Album) => {
     setSelectedAlbumForView(album);
   };
 
   const filteredAndSortedAlbums = useMemo(() => {
-    let albums = mockAlbums.filter(album =>
+    let albums = [...mockAlbums];
+
+    if (playerAlbumIdsFilter) {
+      albums = albums.filter(album => playerAlbumIdsFilter.includes(album.id));
+    }
+
+    albums = albums.filter(album =>
       album.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       album.publisher.toLowerCase().includes(searchTerm.toLowerCase()) ||
       album.year.toString().includes(searchTerm)
@@ -63,7 +83,14 @@ export default function AlbumsPage() {
         break;
     }
     return albums;
-  }, [searchTerm, sortOption]);
+  }, [searchTerm, sortOption, playerAlbumIdsFilter]);
+
+  const clearPlayerFilter = () => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.delete("playerAlbumIds");
+    newParams.delete("playerName");
+    router.push(`/albums?${newParams.toString()}`);
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -129,6 +156,17 @@ export default function AlbumsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
       </div>
+
+      {playerAlbumIdsFilter && (
+        <div className="mb-4 p-3 bg-accent/20 rounded-md flex flex-col sm:flex-row justify-between items-center gap-2">
+          <p className="text-sm text-accent-foreground text-center sm:text-left">
+            {playerNameFilter ? `Mostrando álbumes donde aparece ${playerNameFilter}.` : "Mostrando álbumes filtrados por jugador."}
+          </p>
+          <Button variant="ghost" size="sm" onClick={clearPlayerFilter} className="w-full sm:w-auto">
+            <X className="mr-1 h-4 w-4" /> Limpiar Filtro de Jugador
+          </Button>
+        </div>
+      )}
 
       {filteredAndSortedAlbums.length > 0 ? (
         <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>

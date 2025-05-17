@@ -23,6 +23,7 @@ export interface Player {
   photoUrl: string;
   appearances?: number;
   goals?: number;
+  albumIds?: string[]; // IDs of albums the player appears in
   dataAiHint?: string;
   title?: string; 
 }
