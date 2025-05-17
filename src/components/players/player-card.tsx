@@ -3,15 +3,16 @@
 
 import type { Player } from "@/types";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // No longer needed for direct navigation
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, ShieldAlert, MapPin, Shirt, Trophy, BookOpenCheck, Pencil, Trash2 } from "lucide-react"; 
+import { CalendarDays, ShieldAlert, MapPin, Shirt, Trophy, Info, Pencil, Trash2 } from "lucide-react"; 
 import { useState, useEffect } from "react";
 
 interface PlayerCardProps {
   player: Player;
+  onViewPlayerDetails: (player: Player) => void; // Changed from routing to opening details
   onEditPlayer: (player: Player) => void;
   onDeletePlayer: (playerId: string) => void;
   isUserAuthenticated: boolean;
@@ -28,11 +29,11 @@ function calculateAge(dateOfBirth: string): number {
   return age;
 }
 
-export function PlayerCard({ player, onEditPlayer, onDeletePlayer, isUserAuthenticated }: PlayerCardProps) {
-  const router = useRouter();
+export function PlayerCard({ player, onViewPlayerDetails, onEditPlayer, onDeletePlayer, isUserAuthenticated }: PlayerCardProps) {
   const [displayInfo, setDisplayInfo] = useState<{ age: number; formattedBirthDate: string } | null>(null);
 
   useEffect(() => {
+    // This effect runs only on the client after hydration
     const age = calculateAge(player.dateOfBirth);
     const formattedBirthDate = new Date(player.dateOfBirth).toLocaleDateString('es-ES', {
       day: '2-digit',
@@ -42,23 +43,19 @@ export function PlayerCard({ player, onEditPlayer, onDeletePlayer, isUserAuthent
     setDisplayInfo({ age, formattedBirthDate });
   }, [player.dateOfBirth]);
 
-  const handleViewPlayerAlbums = () => {
-    if (player.albumIds && player.albumIds.length > 0) {
-      const albumIdsQuery = player.albumIds.join(',');
-      const playerNameQuery = encodeURIComponent(player.name);
-      router.push(`/albums?playerAlbumIds=${albumIdsQuery}&playerName=${playerNameQuery}`);
-    }
+  const handleCardClick = () => {
+    onViewPlayerDetails(player);
   };
 
   return (
     <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
       <div 
         className="group relative cursor-pointer"
-        onClick={handleViewPlayerAlbums}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleViewPlayerAlbums(); }}
+        onClick={handleCardClick}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(); }}
         role="button"
         tabIndex={0}
-        aria-label={`Ver álbumes de ${player.name}`}
+        aria-label={`Ver detalles de ${player.name}`}
       >
         <CardHeader className="p-0 relative">
           <div className="aspect-square w-full relative">
@@ -80,7 +77,7 @@ export function PlayerCard({ player, onEditPlayer, onDeletePlayer, isUserAuthent
           <div className="space-y-2 text-sm text-foreground">
             <div className="flex items-center">
               <ShieldAlert className="w-4 h-4 mr-2 text-accent" />
-              <span>Equipo: {player.team}</span>
+              <span>Equipo: {player.currentTeam || player.teamsHistory?.[0]?.teamName || 'N/A'}</span>
             </div>
             <div className="flex items-center">
               <MapPin className="w-4 h-4 mr-2 text-accent" />
@@ -110,18 +107,10 @@ export function PlayerCard({ player, onEditPlayer, onDeletePlayer, isUserAuthent
         </CardContent>
       </div>
       <CardFooter className="p-4 bg-secondary/50 rounded-b-lg flex justify-between items-center">
-        <div>
-          {player.albumIds && player.albumIds.length > 0 ? (
-            <Button variant="outline" size="sm" onClick={handleViewPlayerAlbums} className="flex items-center">
-              <BookOpenCheck className="w-4 h-4 mr-1.5" />
-              Ver Álbumes
-            </Button>
-          ) : (
-             <Badge variant={player.position === "Delantero" ? "default" : "secondary"}>
-                {player.position}
-             </Badge>
-          )}
-        </div>
+        <Button variant="outline" size="sm" onClick={handleCardClick} className="flex items-center">
+            <Info className="w-4 h-4 mr-1.5" />
+            Ver Detalles
+        </Button>
         {isUserAuthenticated && (
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" onClick={() => onEditPlayer(player)} aria-label={`Editar ${player.name}`}>

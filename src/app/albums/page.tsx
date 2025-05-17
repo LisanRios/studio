@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+// import { useSearchParams, useRouter } from "next/navigation"; // No longer needed for player filter
 import type { Album, AlbumFormData } from "@/types";
 import { AlbumCard } from "@/components/albums/album-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,8 +49,8 @@ type SortOption = "year-desc" | "year-asc" | "title-asc" | "title-desc";
 type ViewMode = "grid" | "list";
 
 export default function AlbumsPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  // const searchParams = useSearchParams(); // Removed as player filter is gone
+  // const router = useRouter(); // Removed as player filter is gone
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -73,7 +73,7 @@ export default function AlbumsPage() {
       coverImage: "https://placehold.co/300x450.png",
       description: "",
       country: "",
-      type: undefined,
+      type: NONE_ALBUM_TYPE_FORM_SENTINEL, // Use sentinel for "Ninguno"
       driveLink: ""
     }
   });
@@ -85,29 +85,13 @@ export default function AlbumsPage() {
         type: editingAlbum.type || NONE_ALBUM_TYPE_FORM_SENTINEL,
       });
     } else {
-      reset({ // Default values for adding new album
-        title: "",
-        year: new Date().getFullYear(),
-        publisher: "",
-        coverImage: "https://placehold.co/300x450.png",
-        description: "",
-        country: "",
-        type: NONE_ALBUM_TYPE_FORM_SENTINEL,
-        driveLink: ""
+      reset({ 
+        title: "", year: new Date().getFullYear(), publisher: "",
+        coverImage: "https://placehold.co/300x450.png", description: "",
+        country: "", type: NONE_ALBUM_TYPE_FORM_SENTINEL, driveLink: ""
       });
     }
   }, [editingAlbum, reset]);
-
-
-  const playerAlbumIdsFilter = useMemo(() => {
-    const idsParam = searchParams.get("playerAlbumIds");
-    return idsParam ? idsParam.split(',') : null;
-  }, [searchParams]);
-
-  const playerNameFilter = useMemo(() => {
-    const nameParam = searchParams.get("playerName");
-    return nameParam ? decodeURIComponent(nameParam) : null;
-  }, [searchParams]);
 
   const handleViewAlbum = (album: Album) => {
     setSelectedAlbumForView(album);
@@ -138,12 +122,14 @@ export default function AlbumsPage() {
   };
 
   const handleFormSubmit = (data: AlbumFormData) => {
-    if (editingAlbum) { // Editing existing album
+    const typeValue = data.type === NONE_ALBUM_TYPE_FORM_SENTINEL ? undefined : data.type as Album['type'];
+    
+    if (editingAlbum) {
       const updatedAlbum: Album = {
         ...editingAlbum,
         ...data,
         year: Number(data.year),
-        type: data.type === NONE_ALBUM_TYPE_FORM_SENTINEL ? undefined : data.type as Album['type'],
+        type: typeValue,
         dataAiHint: `${data.title.toLowerCase()} album`,
       };
       setAlbums(prevAlbums => prevAlbums.map(a => a.id === editingAlbum.id ? updatedAlbum : a));
@@ -151,7 +137,7 @@ export default function AlbumsPage() {
         title: "Álbum Actualizado",
         description: `"${data.title}" ha sido actualizado.`,
       });
-    } else { // Adding new album
+    } else { 
       const newAlbum: Album = {
         id: Date.now().toString(),
         title: data.title,
@@ -160,7 +146,7 @@ export default function AlbumsPage() {
         coverImage: data.coverImage,
         description: data.description,
         country: data.country,
-        type: data.type === NONE_ALBUM_TYPE_FORM_SENTINEL ? undefined : data.type as Album['type'],
+        type: typeValue,
         driveLink: data.driveLink,
         dataAiHint: `${data.title.toLowerCase()} album`,
       };
@@ -172,15 +158,10 @@ export default function AlbumsPage() {
     }
     setShowAddEditAlbumDialog(false);
     setEditingAlbum(null);
-    // Reset is handled by useEffect watching editingAlbum
   };
 
   const filteredAndSortedAlbums = useMemo(() => {
     let filtered = [...albums];
-
-    if (playerAlbumIdsFilter) {
-      filtered = filtered.filter(album => playerAlbumIdsFilter.includes(album.id));
-    }
 
     filtered = filtered.filter(album =>
       album.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -189,28 +170,14 @@ export default function AlbumsPage() {
     );
 
     switch (sortOption) {
-      case "year-desc":
-        filtered.sort((a, b) => b.year - a.year);
-        break;
-      case "year-asc":
-        filtered.sort((a, b) => a.year - b.year);
-        break;
-      case "title-asc":
-        filtered.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "title-desc":
-        filtered.sort((a, b) => b.title.localeCompare(a.title));
-        break;
+      case "year-desc": filtered.sort((a, b) => b.year - a.year); break;
+      case "year-asc": filtered.sort((a, b) => a.year - b.year); break;
+      case "title-asc": filtered.sort((a, b) => a.title.localeCompare(b.title)); break;
+      case "title-desc": filtered.sort((a, b) => b.title.localeCompare(a.title)); break;
     }
     return filtered;
-  }, [searchTerm, sortOption, playerAlbumIdsFilter, albums]);
+  }, [searchTerm, sortOption, albums]);
 
-  const clearPlayerFilter = () => {
-    const newParams = new URLSearchParams(searchParams.toString());
-    newParams.delete("playerAlbumIds");
-    newParams.delete("playerName");
-    router.push(`/albums?${newParams.toString()}`);
-  };
 
   return (
     <div className="container mx-auto py-8">
@@ -253,7 +220,7 @@ export default function AlbumsPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>Alternar Columnas</DropdownMenuLabel>
+              <DropdownMenuLabel>Alternar Columnas Visibles</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={visibleFilters.publisher}
@@ -277,17 +244,6 @@ export default function AlbumsPage() {
           </DropdownMenu>
       </div>
 
-      {playerAlbumIdsFilter && (
-        <div className="mb-4 p-3 bg-accent/20 rounded-md flex flex-col sm:flex-row justify-between items-center gap-2">
-          <p className="text-sm text-accent-foreground text-center sm:text-left">
-            {playerNameFilter ? `Mostrando álbumes donde aparece ${playerNameFilter}.` : "Mostrando álbumes filtrados por jugador."}
-          </p>
-          <Button variant="ghost" size="sm" onClick={clearPlayerFilter} className="w-full sm:w-auto">
-            <X className="mr-1 h-4 w-4" /> Limpiar Filtro de Jugador
-          </Button>
-        </div>
-      )}
-
       {filteredAndSortedAlbums.length > 0 ? (
         <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
           {filteredAndSortedAlbums.map(album => (
@@ -301,6 +257,7 @@ export default function AlbumsPage() {
               onEditAlbum={openEditAlbumDialog}
               onDeleteAlbum={handleDeleteAlbumRequest}
               isUserAuthenticated={!!user}
+              // Pass visibleFilters for conditional rendering inside AlbumCard if needed for list view
             />
           ))}
         </div>
@@ -322,10 +279,7 @@ export default function AlbumsPage() {
       )}
 
       <Dialog open={showAddEditAlbumDialog} onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setEditingAlbum(null); // Ensure editingAlbum is reset when dialog closes
-            reset(); // Explicitly reset form
-          }
+          if (!isOpen) { setEditingAlbum(null); reset(); }
           setShowAddEditAlbumDialog(isOpen);
         }}>
         <DialogContent className="sm:max-w-lg">
@@ -370,7 +324,7 @@ export default function AlbumsPage() {
                 name="type"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value || undefined}>
+                  <Select onValueChange={field.onChange} value={field.value || NONE_ALBUM_TYPE_FORM_SENTINEL}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecciona un tipo" />
                     </SelectTrigger>
