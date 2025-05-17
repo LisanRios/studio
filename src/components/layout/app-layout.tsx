@@ -1,19 +1,29 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Users, LayoutDashboard, Menu, Vault } from 'lucide-react';
+import { BookOpen, Users, LayoutDashboard, Menu, Vault, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
+  requiresAuth?: boolean; // Nuevo: para elementos que requieren autenticación
 }
 
 const navItems: NavItem[] = [
@@ -29,6 +39,37 @@ const Logo = () => (
 function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout, loading } = useAuth();
+
+  const getInitials = (name: string | undefined) => {
+    if (!name) return "U";
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const renderNavItems = (isMobile = false) => {
+    return navItems.map((item) => {
+      if (item.requiresAuth && !user) {
+        return null; // No mostrar si requiere autenticación y no hay usuario
+      }
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={cn(
+            "flex items-center px-3 py-2 rounded-md font-medium transition-colors",
+            isMobile ? "text-base" : "text-sm",
+            pathname === item.href
+              ? "bg-primary text-primary-foreground"
+              : "text-foreground hover:bg-accent hover:text-accent-foreground"
+          )}
+          onClick={() => isMobile && setMobileMenuOpen(false)}
+        >
+          <item.icon className={cn("h-5 w-5", isMobile ? "mr-3 h-6 w-6" : "mr-2")} />
+          {item.label}
+        </Link>
+      );
+    });
+  };
 
   return (
     <nav className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background/90 backdrop-blur-sm px-4 sm:px-6 md:px-8">
@@ -40,29 +81,59 @@ function Navbar() {
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex items-center space-x-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-              pathname === item.href
-                ? "bg-primary text-primary-foreground"
-                : "text-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <item.icon className="mr-2 h-5 w-5" />
-            {item.label}
-          </Link>
-        ))}
+        {renderNavItems()}
       </div>
 
-      {/* Mobile Navigation Trigger */}
-      <div className="md:hidden">
-        <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(true)}>
-          <Menu className="h-6 w-6" />
-          <span className="sr-only">Abrir menú</span>
-        </Button>
+      {/* Auth buttons and User Avatar */}
+      <div className="flex items-center gap-3">
+        {!loading && (
+          user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Avatar className="h-9 w-9">
+                    {/* Puedes añadir una imagen de avatar si la tienes */}
+                    {/* <AvatarImage src="/path-to-avatar.png" alt={user.username} /> */}
+                    <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">Hola, {user.username}</p>
+                    {/* <p className="text-xs leading-none text-muted-foreground">
+                      {user.email} // Si tuvieras email
+                    </p> */}
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {/* <DropdownMenuItem>Perfil</DropdownMenuItem> */}
+                {/* <DropdownMenuItem>Ajustes</DropdownMenuItem> */}
+                {/* <DropdownMenuSeparator /> */}
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Cerrar Sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/login" passHref>
+              <Button variant="ghost" className="hidden md:flex">
+                <LogIn className="mr-2 h-5 w-5" />
+                Iniciar Sesión
+              </Button>
+            </Link>
+          )
+        )}
+
+        {/* Mobile Navigation Trigger */}
+        <div className="md:hidden">
+          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(true)}>
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Abrir menú</span>
+          </Button>
+        </div>
       </div>
 
       {/* Mobile Navigation Sheet */}
@@ -77,22 +148,15 @@ function Navbar() {
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <nav className="flex flex-col space-y-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors",
-                      pathname === item.href
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <item.icon className="mr-3 h-6 w-6" />
-                    {item.label}
+                {renderNavItems(true)}
+                {!user && !loading && (
+                   <Link href="/login" passHref>
+                      <Button variant="outline" className="w-full justify-start px-3 py-2 mt-4" onClick={() => setMobileMenuOpen(false)}>
+                        <LogIn className="mr-3 h-6 w-6" />
+                        Iniciar Sesión
+                      </Button>
                   </Link>
-                ))}
+                )}
               </nav>
             </div>
           </div>
