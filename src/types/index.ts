@@ -12,6 +12,9 @@ export interface Album {
 }
 
 export type PlayerPosition = "Portero" | "Defensor" | "Centrocampista" | "Delantero";
+export const playerPositions: PlayerPosition[] = ["Portero", "Defensor", "Centrocampista", "Delantero"];
+export const albumTypes: Album["type"][] = ["Selección Nacional", "Club", "Liga"];
+
 
 export interface Player {
   id: string;
@@ -25,5 +28,11 @@ export interface Player {
   goals?: number;
   albumIds?: string[]; // IDs of albums the player appears in
   dataAiHint?: string;
-  title?: string; 
+  // title?: string; // Parece ser un duplicado de 'name' o un campo innecesario, se omite por ahora
 }
+
+// Tipos para los formularios
+export type AlbumFormData = Omit<Album, "id" | "dataAiHint">;
+export type PlayerFormData = Omit<Player, "id" | "dataAiHint" | "albumIds"> & {
+  albumIdsInput?: string; // Para el input de texto de albumIds
+};

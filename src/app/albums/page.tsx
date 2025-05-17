@@ -1,13 +1,14 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import type { Album } from "@/types";
+import type { Album, AlbumFormData } from "@/types";
 import { AlbumCard } from "@/components/albums/album-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { BarChart, LayoutGrid, List, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { BarChart, LayoutGrid, List, X, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,9 +18,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useForm, Controller } from "react-hook-form";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { albumTypes } from "@/types";
 
-const mockAlbums: Album[] = [
+const initialMockAlbums: Album[] = [
   { id: "1", title: "Copa Mundial 1998 Francia", year: 1998, publisher: "Panini", coverImage: "https://placehold.co/300x450.png", description: "Álbum oficial de cromos de la Copa Mundial de la FIFA 1998 celebrada en Francia.", country: "Francia", type: "Selección Nacional", dataAiHint: "soccer album", driveLink: "https://drive.google.com/file/d/PLACEHOLDER_DRIVE_ID_1/preview" },
   { id: "2", title: "Champions League 2004-2005", year: 2004, publisher: "Topps", coverImage: "https://placehold.co/300x450.png", description: "Revive la magia de la temporada 04/05 de la Champions League.", type: "Club", dataAiHint: "soccer stickers", driveLink: "https://drive.google.com/file/d/PLACEHOLDER_DRIVE_ID_2/preview" },
   { id: "3", title: "Euro 2000 Bélgica/Países Bajos", year: 2000, publisher: "Panini", coverImage: "https://placehold.co/300x450.png", description: "El álbum oficial del torneo UEFA Euro 2000.", country: "Bélgica", type: "Selección Nacional", dataAiHint: "football cards", driveLink: "https://drive.google.com/file/d/PLACEHOLDER_DRIVE_ID_3/preview" },
@@ -34,12 +40,29 @@ type ViewMode = "grid" | "list";
 export default function AlbumsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
+  const [albums, setAlbums] = useState<Album[]>(initialMockAlbums);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("year-desc");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [visibleFilters, setVisibleFilters] = useState<{ publisher: boolean; type: boolean; country: boolean; }>({ publisher: true, type: true, country: true});
   const [selectedAlbumForView, setSelectedAlbumForView] = useState<Album | null>(null);
+  const [showAddAlbumDialog, setShowAddAlbumDialog] = useState(false);
+
+  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<AlbumFormData>({
+    defaultValues: {
+      title: "",
+      year: new Date().getFullYear(),
+      publisher: "",
+      coverImage: "https://placehold.co/300x450.png",
+      description: "",
+      country: "",
+      type: undefined,
+      driveLink: ""
+    }
+  });
 
   const playerAlbumIdsFilter = useMemo(() => {
     const idsParam = searchParams.get("playerAlbumIds");
@@ -55,14 +78,30 @@ export default function AlbumsPage() {
     setSelectedAlbumForView(album);
   };
 
+  const handleAddAlbum = (data: AlbumFormData) => {
+    const newAlbum: Album = {
+      ...data,
+      id: Date.now().toString(), // Simple ID generation
+      year: Number(data.year), // Ensure year is a number
+      dataAiHint: `${data.title.toLowerCase()} album`, // Basic AI hint
+    };
+    setAlbums(prevAlbums => [newAlbum, ...prevAlbums]);
+    setShowAddAlbumDialog(false);
+    reset();
+    toast({
+      title: "Álbum Agregado",
+      description: `"${data.title}" ha sido agregado a la colección.`,
+    });
+  };
+
   const filteredAndSortedAlbums = useMemo(() => {
-    let albums = [...mockAlbums];
+    let filtered = [...albums];
 
     if (playerAlbumIdsFilter) {
-      albums = albums.filter(album => playerAlbumIdsFilter.includes(album.id));
+      filtered = filtered.filter(album => playerAlbumIdsFilter.includes(album.id));
     }
 
-    albums = albums.filter(album =>
+    filtered = filtered.filter(album =>
       album.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       album.publisher.toLowerCase().includes(searchTerm.toLowerCase()) ||
       album.year.toString().includes(searchTerm)
@@ -70,20 +109,20 @@ export default function AlbumsPage() {
 
     switch (sortOption) {
       case "year-desc":
-        albums.sort((a, b) => b.year - a.year);
+        filtered.sort((a, b) => b.year - a.year);
         break;
       case "year-asc":
-        albums.sort((a, b) => a.year - b.year);
+        filtered.sort((a, b) => a.year - b.year);
         break;
       case "title-asc":
-        albums.sort((a, b) => a.title.localeCompare(b.title));
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
         break;
       case "title-desc":
-        albums.sort((a, b) => b.title.localeCompare(a.title));
+        filtered.sort((a, b) => b.title.localeCompare(a.title));
         break;
     }
-    return albums;
-  }, [searchTerm, sortOption, playerAlbumIdsFilter]);
+    return filtered;
+  }, [searchTerm, sortOption, playerAlbumIdsFilter, albums]);
 
   const clearPlayerFilter = () => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -186,6 +225,86 @@ export default function AlbumsPage() {
           <p className="text-xl text-muted-foreground">No se encontraron álbumes con tus criterios de búsqueda.</p>
         </div>
       )}
+
+      {user && (
+        <Button
+          onClick={() => setShowAddAlbumDialog(true)}
+          className="fixed bottom-6 right-6 rounded-full p-4 shadow-lg"
+          size="lg"
+          aria-label="Agregar nuevo álbum"
+        >
+          <PlusCircle className="h-6 w-6 mr-2" /> Nuevo Álbum
+        </Button>
+      )}
+
+      <Dialog open={showAddAlbumDialog} onOpenChange={setShowAddAlbumDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Agregar Nuevo Álbum</DialogTitle>
+            <DialogDescription>Completa los detalles del nuevo álbum.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(handleAddAlbum)} className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="title">Título</Label>
+              <Input id="title" {...register("title", { required: "El título es obligatorio" })} />
+              {errors.title && <p className="text-sm text-destructive mt-1">{errors.title.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="year">Año</Label>
+              <Input id="year" type="number" {...register("year", { required: "El año es obligatorio", valueAsNumber: true })} />
+              {errors.year && <p className="text-sm text-destructive mt-1">{errors.year.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="publisher">Editorial</Label>
+              <Input id="publisher" {...register("publisher", { required: "La editorial es obligatoria" })} />
+              {errors.publisher && <p className="text-sm text-destructive mt-1">{errors.publisher.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="coverImage">URL de Portada</Label>
+              <Input id="coverImage" type="url" {...register("coverImage", { required: "La URL de portada es obligatoria" })} />
+              {errors.coverImage && <p className="text-sm text-destructive mt-1">{errors.coverImage.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea id="description" {...register("description")} />
+            </div>
+            <div>
+              <Label htmlFor="country">País</Label>
+              <Input id="country" {...register("country")} />
+            </div>
+            <div>
+              <Label htmlFor="type">Tipo</Label>
+              <Controller
+                name="type"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Ninguno</SelectItem>
+                      {albumTypes.map(type => (
+                        <SelectItem key={type} value={type!}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label htmlFor="driveLink">Enlace de Drive (Preview)</Label>
+              <Input id="driveLink" type="url" {...register("driveLink")} placeholder="https://drive.google.com/file/d/.../preview"/>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancelar</Button>
+              </DialogClose>
+              <Button type="submit">Agregar Álbum</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!selectedAlbumForView} onOpenChange={(isOpen) => { if (!isOpen) setSelectedAlbumForView(null); }}>
         <DialogContent className="sm:max-w-4xl h-[85vh] flex flex-col p-0">
