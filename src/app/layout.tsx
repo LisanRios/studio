@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Archivo de Álbumes',
+  title: 'FutBunker',
   description: 'Un archivo digital para álbumes de fútbol e información de jugadores.',
 };
 

@@ -7,7 +7,7 @@ export default function HomePage() {
   return (
     <div className="container mx-auto py-8">
       <header className="text-center mb-12">
-        <h1 className="text-5xl font-bold text-primary mb-4">Bienvenido al Archivo de Álbumes</h1>
+        <h1 className="text-5xl font-bold text-primary mb-4">Bienvenido a FutBunker</h1>
         <p className="text-xl text-muted-foreground">
           Tu repositorio digital para álbumes clásicos de fútbol e historia de jugadores.
         </p>
@@ -54,9 +54,9 @@ export default function HomePage() {
       </div>
 
       <section className="mt-16 text-center p-8 bg-card rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-primary mb-3">Sobre el Archivo de Álbumes</h2>
+        <h2 className="text-2xl font-semibold text-primary mb-3">Sobre FutBunker</h2>
         <p className="text-muted-foreground">
-          El Archivo de Álbumes está dedicado a preservar la rica historia del fútbol a través de sus álbumes icónicos y carreras de jugadores.
+          FutBunker está dedicado a preservar la rica historia del fútbol a través de sus álbumes icónicos y carreras de jugadores.
           Nuestra plataforma digital permite a entusiastas e investigadores por igual acceder y explorar fácilmente este fascinante mundo.
         </p>
       </section>
