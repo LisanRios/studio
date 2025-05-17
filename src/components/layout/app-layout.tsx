@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Users, Upload, LayoutDashboard, Menu } from 'lucide-react';
+import { BookOpen, Users, LayoutDashboard, Menu } from 'lucide-react'; // Removed Upload icon
 import {
   SidebarProvider,
   Sidebar,
@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/albums', label: 'Albums', icon: BookOpen },
   { href: '/players', label: 'Players', icon: Users },
-  { href: '/upload', label: 'Upload PDF', icon: Upload },
+  // { href: '/upload', label: 'Upload PDF', icon: Upload }, // Removed Upload PDF link
 ];
 
 function MobileSidebar() {
