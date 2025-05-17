@@ -140,6 +140,21 @@ Para un despliegue de producción, se necesitaría configurar un backend persist
 
 Un flujo de usuario típico podría ser:
 
+- **Usuario visita la página de Inicio.**
+-   ➡️ Ve opciones para explorar Álbumes, Jugadores o Equipos.
+- **Usuario navega a "Álbumes".**
+-   ➡️ Ve lista de álbumes. Puede buscar, ordenar, filtrar.
+-   ➡️ Hace clic en un álbum ➡️ Se abre modal con iframe de Google Drive.
+- **Usuario intenta agregar un álbum.**
+-   ➡️ Si no está logueado ➡️ No ve el botón "+ Nuevo Álbum".
+-   ➡️ Si está logueado ➡️ Clic en "+ Nuevo Álbum" ➡️ Abre modal con formulario ➡️ Completa y guarda ➡️ Álbum aparece en la lista (estado local).
+- **Usuario decide iniciar sesión.**
+-   ➡️ Va a "Iniciar Sesión" ➡️ Ingresa `admin`/`123` ➡️ Logueado exitosamente.
+-   ➡️ Ahora ve opciones de edición/borrado y "Gestionar Usuarios".
+- **Usuario (admin) va a "Gestionar Usuarios".**
+-   ➡️ Ve lista de usuarios ➡️ Agrega un nuevo usuario ➡️ Nuevo usuario aparece en la lista (estado local).
+
+
 1.  **Usuario visita la página de Inicio.**
     *   ➡️ Ve opciones para explorar Álbumes, Jugadores o Equipos.
 2.  **Usuario navega a "Álbumes".**
