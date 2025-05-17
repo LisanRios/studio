@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Player } from "@/types";
@@ -6,11 +7,13 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, ShieldAlert, MapPin, Shirt, Trophy, BookOpenCheck } from "lucide-react"; 
+import { useState, useEffect } from "react";
 
 interface PlayerCardProps {
   player: Player;
 }
 
+// calculateAge remains largely the same, but will be called client-side
 function calculateAge(dateOfBirth: string): number {
   const birthDate = new Date(dateOfBirth);
   const today = new Date();
@@ -24,6 +27,18 @@ function calculateAge(dateOfBirth: string): number {
 
 export function PlayerCard({ player }: PlayerCardProps) {
   const router = useRouter();
+  const [displayInfo, setDisplayInfo] = useState<{ age: number; formattedBirthDate: string } | null>(null);
+
+  useEffect(() => {
+    // Calculate age and format date on the client side
+    const age = calculateAge(player.dateOfBirth);
+    const formattedBirthDate = new Date(player.dateOfBirth).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    setDisplayInfo({ age, formattedBirthDate });
+  }, [player.dateOfBirth]);
 
   const handlePlayerCardClick = () => {
     if (player.albumIds && player.albumIds.length > 0) {
@@ -71,7 +86,11 @@ export function PlayerCard({ player }: PlayerCardProps) {
           </div>
           <div className="flex items-center">
             <CalendarDays className="w-4 h-4 mr-2 text-accent" />
-            <span>Edad: {calculateAge(player.dateOfBirth)} (Nac.: {new Date(player.dateOfBirth).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric'})})</span>
+            {displayInfo ? (
+              <span>Edad: {displayInfo.age} (Nac.: {displayInfo.formattedBirthDate})</span>
+            ) : (
+              <span>Cargando fecha...</span> 
+            )}
           </div>
           {player.appearances !== undefined && (
             <div className="flex items-center">
