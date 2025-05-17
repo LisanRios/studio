@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Users, LayoutDashboard, Menu, Vault, LogIn, LogOut, Shield } from 'lucide-react';
+import { BookOpen, Users, LayoutDashboard, Menu, Vault, LogIn, LogOut, Shield, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -105,6 +105,13 @@ function Navbar() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/manage-users">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Gestionar Usuarios
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar Sesión
@@ -143,6 +150,16 @@ function Navbar() {
             <div className="flex-1 overflow-y-auto p-4">
               <nav className="flex flex-col space-y-2">
                 {renderNavItems(true)}
+                 {!loading && user && (
+                  <>
+                    <DropdownMenuSeparator />
+                     <Link href="/manage-users" passHref>
+                        <Button variant="outline" className="w-full justify-start px-3 py-2 mt-2" onClick={() => setMobileMenuOpen(false)}>
+                           <UserPlus className="mr-3 h-6 w-6" /> Gestionar Usuarios
+                        </Button>
+                     </Link>
+                  </>
+                )}
                 {!user && !loading && (
                    <Link href="/login" passHref>
                       <Button variant="outline" className="w-full justify-start px-3 py-2 mt-4" onClick={() => setMobileMenuOpen(false)}>
@@ -153,6 +170,13 @@ function Navbar() {
                 )}
               </nav>
             </div>
+             {user && !loading && (
+                <div className="p-4 border-t mt-auto">
+                    <Button variant="outline" className="w-full justify-start px-3 py-2" onClick={() => { logout(); setMobileMenuOpen(false);}}>
+                        <LogOut className="mr-3 h-6 w-6" /> Cerrar Sesión
+                    </Button>
+                </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>

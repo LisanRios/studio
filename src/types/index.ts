@@ -136,6 +136,15 @@ export type TeamFormData = {
   albumIds?: string[];
 };
 
+export interface UserCredentials {
+  username: string;
+  password?: string; // Password is required for creation and is present in users.json
+}
+
+export interface LoggedInUser { // Represents the currently authenticated user session
+  username: string;
+}
+
 
 // Helper function to check if a player is a goalkeeper
 export function isGoalkeeper(position: PlayerPosition): boolean {
