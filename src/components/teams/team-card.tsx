@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Shield, Landmark, Users, Trophy, Info, Pencil, Trash2, BookOpen } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface TeamCardProps {
   team: Team;
@@ -18,6 +19,13 @@ interface TeamCardProps {
 }
 
 export function TeamCard({ team, onViewTeamDetails, onViewTeamAlbums, onEditTeam, onDeleteTeam, isUserAuthenticated }: TeamCardProps) {
+  const [formattedCapacity, setFormattedCapacity] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (team.stadiumCapacity !== undefined) {
+      setFormattedCapacity(team.stadiumCapacity.toLocaleString());
+    }
+  }, [team.stadiumCapacity]);
   
   const handleViewDetailsClick = () => {
     onViewTeamDetails(team);
@@ -68,7 +76,7 @@ export function TeamCard({ team, onViewTeamDetails, onViewTeamAlbums, onEditTeam
             {team.stadiumCapacity !== undefined && (
               <div className="flex items-center">
                 <Users className="w-4 h-4 mr-2 text-accent" />
-                <span>Capacidad: {team.stadiumCapacity.toLocaleString()}</span>
+                <span>Capacidad: {formattedCapacity !== null ? formattedCapacity : team.stadiumCapacity}</span>
               </div>
             )}
              {team.titles && team.titles.length > 0 && (
@@ -109,3 +117,4 @@ export function TeamCard({ team, onViewTeamDetails, onViewTeamAlbums, onEditTeam
     </Card>
   );
 }
+
