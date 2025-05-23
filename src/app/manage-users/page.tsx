@@ -1,7 +1,4 @@
-
-"use client";
-
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,9 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, List, AlertTriangle } from 'lucide-react'; // Corrected ListUsers to List
-import type { UserCredentials } from '@/types';
+import { UserPlus, List, AlertTriangle, Edit, Trash2, Check, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { UserCredentials } from '@/types';
+
+type User = {
+  _id: string;
+  email: string;
+  username?: string;
+  status: 'pending' | 'active' | 'disabled';
+  role: 'user' | 'admin';
+  createdAt: string;
+};
 
 type AddUserFormData = Required<UserCredentials>;
 
@@ -21,27 +29,80 @@ export default function ManageUsersPage() {
   const { toast } = useToast();
   const { register, handleSubmit, reset, formState: { errors } } = useForm<AddUserFormData>();
   const [isLoading, setIsLoading] = useState(false);
-  const [userList, setUserList] = useState<Pick<UserCredentials, 'username'>[]>([]);
+  const [userList, setUserList] = useState<User[]>([]);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+
+  // Obtener lista de usuarios desde la API
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/auth/users', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
+      if (data.success) setUserList(data.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     } else if (user) {
-      setUserList(getUsers());
+      fetchUsers();
     }
-  }, [user, authLoading, router, getUsers]);
+  }, [user, authLoading, router]);
+
+  const handleStatusChange = async (userId: string, newStatus: 'pending' | 'active' | 'disabled') => {
+    try {
+      const response = await fetch(`/api/auth/users/${userId}/status`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        toast({ title: "Estado actualizado", description: `Usuario ${newStatus}` });
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/auth/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        toast({ title: "Usuario eliminado", description: "Usuario eliminado correctamente" });
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+  };
 
   const handleAddUserSubmit = async (data: AddUserFormData) => {
     setIsLoading(true);
     const result = await addUser(data);
     setIsLoading(false);
+    
     if (result.success) {
       toast({
         title: "Usuario Agregado",
         description: result.message,
       });
-      setUserList(getUsers()); // Refresh user list
-      reset(); // Reset form fields
+      fetchUsers();
+      reset();
     } else {
       toast({
         variant: "destructive",
@@ -50,14 +111,6 @@ export default function ManageUsersPage() {
       });
     }
   };
-
-  if (authLoading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-15rem)]">
-        <p>Cargando...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto py-8">
@@ -86,12 +139,63 @@ export default function ManageUsersPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Gestión de Usuarios</CardTitle>
+          <CardDescription>Administra los usuarios del sistema</CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {userList.map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Select 
+                      value={user.status} 
+                      onValueChange={(value: 'pending' | 'active' | 'disabled') => handleStatusChange(user._id, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pendiente</SelectItem>
+                        <SelectItem value="active">Activo</SelectItem>
+                        <SelectItem value="disabled">Deshabilitado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell className="flex gap-2">
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => handleDeleteUser(user._id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <div className="grid md:grid-cols-2 gap-8">
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl flex items-center">
-              <List className="mr-2 h-6 w-6 text-primary" /> Usuarios Existentes {/* Corrected ListUsers to List */}
+              <List className="mr-2 h-6 w-6 text-primary" /> Usuarios Existentes
             </CardTitle>
             <CardDescription>Lista de usuarios actualmente en el sistema (en memoria).</CardDescription>
           </CardHeader>
