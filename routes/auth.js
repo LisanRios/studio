@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect, authorize, superAdminOnly } = require('../middleware/auth');
+const supabase = require('../../src/lib/supabaseClient'); // Assuming you have a supabase config file
 
 /**
  * @swagger
@@ -26,12 +27,11 @@ const { protect, authorize, superAdminOnly } = require('../middleware/auth');
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - username
  *               - password
  *             properties:
- *               email:
+ *               username:
  *                 type: string
- *                 format: email
  *               password:
  *                 type: string
  *                 minLength: 6
@@ -45,34 +45,68 @@ const { protect, authorize, superAdminOnly } = require('../middleware/auth');
 // @route   POST /api/auth/register
 // @desc    Registrar usuario
 router.post('/register', [
-  check('email', 'Por favor incluye un email válido').isEmail(),
-  check('password', 'Por favor ingresa una contraseña con 6 o más caracteres').isLength({ min: 6 })
-], async (req, res, next) => {
+  check('username', 'Username es requerido (min 3 caracteres)').isLength({ min: 3 }),
+  check('password', 'Password debe tener al menos 6 caracteres').isLength({ min: 6 })
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { email, password } = req.body;
+  const { username, password } = req.body;
 
   try {
-    let user = await User.findOne({ email });
+    // 1. Verificar si username existe
+    const { data: existingUser, error: lookupError } = await supabase
+      .from('users')
+      .select('username')
+      .eq('username', username)
+      .single();
 
-    if (user) {
-      return res.status(400).json({ errors: [{ msg: 'El usuario ya existe' }] });
+    if (existingUser) {
+      return res.status(400).json({ error: 'El username ya está en uso' });
     }
 
-    user = new User({ email, password });
-    await user.save();
+    // 2. Hashear password
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
 
-    const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN }, (err, token) => {
-      if (err) throw err;
-      res.json({ token });
+    // 3. Crear usuario
+    const newUser = {
+      id: `user_${Date.now()}`,
+      username,
+      password_hash,
+      status: 'active',
+      role: 'user',
+      created_at: new Date().toISOString()
+    };
+
+    const { data: user, error: insertError } = await supabase
+      .from('users')
+      .insert([newUser])
+      .select();
+
+    if (insertError) throw insertError;
+
+    // 4. Generar JWT
+    const token = jwt.sign(
+      { id: user[0].id, role: user[0].role },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.status(201).json({ 
+      token, 
+      user: { 
+        id: user[0].id, 
+        username: user[0].username, 
+        role: user[0].role 
+      }
     });
+
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Error del servidor');
+    console.error('Error en registro:', err);
+    res.status(500).json({ error: 'Error en el servidor' });
   }
 });
 
@@ -89,12 +123,11 @@ router.post('/register', [
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - username
  *               - password
  *             properties:
- *               email:
+ *               username:
  *                 type: string
- *                 format: email
  *               password:
  *                 type: string
  *     responses:
@@ -107,37 +140,46 @@ router.post('/register', [
 // @route   POST /api/auth/login
 // @desc    Autenticar usuario
 router.post('/login', [
-  check('email', 'Por favor incluye un email válido').isEmail(),
-  check('password', 'La contraseña es requerida').exists()
-], async (req, res, next) => {
+  check('username', 'Username es requerido').notEmpty(),
+  check('password', 'Password debe tener al menos 6 caracteres').isLength({ min: 6 })
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { email, password } = req.body;
+  const { username, password } = req.body;
 
   try {
-    let user = await User.findOne({ email }).select('+password');
+    // 1. Buscar usuario en Supabase
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
 
-    if (!user) {
-      return res.status(400).json({ errors: [{ msg: 'Credenciales inválidas' }] });
+    if (error || !user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-      return res.status(400).json({ errors: [{ msg: 'Credenciales inválidas' }] });
+    // 2. Verificar contraseña (usando bcrypt)
+    const validPassword = await bcrypt.compare(password, user.password_hash);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN }, (err, token) => {
-      if (err) throw err;
-      res.json({ token });
-    });
+    // 3. Generar JWT
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
+
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Error del servidor');
+    console.error('Error en login:', err);
+    res.status(500).json({ error: 'Error en el servidor' });
   }
 });
 

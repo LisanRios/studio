@@ -1,11 +1,10 @@
-
 # FutBunker: Archivo Digital de Fútbol
 
-## 📋 Descripción
+## Descripción
 
 FutBunker es una aplicación web diseñada como un archivo digital interactivo para entusiastas del fútbol. Permite a los usuarios explorar, gestionar y descubrir información sobre álbumes de cromos de fútbol históricos, jugadores legendarios y equipos emblemáticos. La aplicación está construida con un enfoque moderno, utilizando Next.js y React, y ofrece una interfaz intuitiva en español con modo oscuro.
 
-## 🚀 Características principales
+## Características principales
 
 *   **Gestión de Álbumes**: Visualiza, agrega, edita y elimina álbumes de fútbol. Incluye detalles como año, editorial, país, tipo y descripción.
 *   **Integración con Google Drive**: Permite previsualizar el contenido de los álbumes directamente desde Google Drive a través de un iframe.
@@ -18,7 +17,7 @@ FutBunker es una aplicación web diseñada como un archivo digital interactivo p
 *   **Interfaz Bilingüe y Tema Oscuro**: Interfaz de usuario completamente en español y con un tema oscuro por defecto para una mejor experiencia visual.
 *   **Diseño Responsivo**: Adaptable a diferentes tamaños de pantalla.
 
-## 📱 Guía de Uso
+## Guía de Uso
 
 ### Acceso al Sistema
 
@@ -74,7 +73,7 @@ La barra de navegación superior contiene los siguientes enlaces:
     *   Utiliza la barra de búsqueda para buscar por nombre.
     *   Usa el selector para filtrar por país.
 
-## 🔐 Roles de usuario
+## Roles de usuario
 
 Actualmente, el sistema maneja dos estados principales para los usuarios:
 
@@ -85,7 +84,7 @@ Actualmente, el sistema maneja dos estados principales para los usuarios:
 
 No existe una granularidad de permisos más allá de estos dos estados en la implementación actual.
 
-## 🌐 Despliegue
+## Despliegue
 
 FutBunker es una aplicación Next.js y puede ser desplegada en diversas plataformas que soportan aplicaciones Node.js y sirven contenido estático/SSR, como:
 
@@ -96,7 +95,7 @@ FutBunker es una aplicación Next.js y puede ser desplegada en diversas platafor
 
 Para un despliegue de producción, se necesitaría configurar un backend persistente (ej. Firebase Firestore, Firebase Auth) en lugar del sistema actual de datos mock y autenticación en memoria/JSON.
 
-## 🔧 Tecnologías
+## Tecnologías
 
 *   **Framework Frontend**: Next.js (v15+)
 *   **Librería UI**: React (v18+)
@@ -109,7 +108,7 @@ Para un despliegue de producción, se necesitaría configurar un backend persist
 *   **Notificaciones (Toasts)**: Implementación personalizada (inspirada en `react-hot-toast`)
 *   **Inteligencia Artificial (Stack Configurado)**: Genkit (aunque no se utiliza activamente para las funciones principales actuales, está integrado en el stack base).
 
-## 🏗 Arquitectura del Sistema
+## Arquitectura del Sistema
 
 ### Componentes principales:
 
@@ -126,6 +125,71 @@ Para un despliegue de producción, se necesitaría configurar un backend persist
     *   **`AuthContext`**: Maneja el estado de autenticación del usuario.
     *   **`users.json`**: Almacena credenciales de usuario para validación (solo para prototipo, no seguro para producción).
 
+### Base de Datos (Supabase)
+
+La aplicación utiliza una base de datos PostgreSQL con las siguientes tablas principales:
+
+#### Tabla `albums`
+
+*   `id` (text, PK)
+*   `title` (text)
+*   `year` (integer)
+*   `publisher` (text)
+*   `cover_image` (text)
+*   `description` (text, nullable)
+*   `country` (text, nullable)
+*   `type` (text, nullable)
+*   `drive_link` (text, nullable)
+*   `data_ai_hint` (text, nullable)
+
+#### Tabla `players`
+
+*   `id` (text, PK)
+*   `name` (text)
+*   `current_team` (text, nullable)
+*   `position` (text)
+*   `date_of_birth` (text)
+*   `nationality` (text)
+*   `photo_url` (text)
+*   `appearances` (integer, nullable)
+*   `goals` (integer, nullable)
+*   `height` (numeric, nullable)
+*   `weight` (numeric, nullable)
+*   `rating` (numeric, nullable)
+
+#### Tabla `teams`
+
+*   `id` (text, PK)
+*   `name` (text)
+*   `country` (text)
+*   `foundation_year` (integer)
+*   `stadium_name` (text)
+*   `stadium_capacity` (integer, nullable)
+*   `logo_url` (text)
+
+#### Tablas de relación
+
+*   `player_albums`: Relación muchos-a-muchos entre jugadores y álbumes
+*   `player_skills`: Habilidades específicas de los jugadores
+*   `player_team_history`: Historial de equipos de los jugadores
+*   `team_albums`: Relación muchos-a-muchos entre equipos y álbumes
+*   `team_titles`: Títulos ganados por los equipos
+
+#### Gestión de usuarios
+
+*   `user_management`: Usuarios y roles del sistema
+
+### Diagrama de relaciones
+
+```mermaid
+graph TD
+  A[albums] -->|player_albums| B[players]
+  A -->|team_albums| C[teams]
+  B -->|player_skills| D[skills]
+  B -->|player_team_history| C
+  C -->|team_titles| E[titles]
+```
+
 ### Flujo de datos:
 
 *   **Carga Inicial**: Los datos se cargan desde archivos mock (`src/data/*`) al estado inicial de los componentes de página (`useState`).
@@ -136,7 +200,7 @@ Para un despliegue de producción, se necesitaría configurar un backend persist
     *   La autenticación se valida contra `users.json` (cargado en `AuthContext`) y el estado de sesión se guarda/lee de `localStorage`.
 *   **Navegación**: Gestionada por el App Router de Next.js.
 
-## 📊 Diagrama de flujo (flujograma)
+## Diagrama de flujo (flujograma)
 
 Un flujo de usuario típico podría ser:
 
@@ -169,7 +233,7 @@ Un flujo de usuario típico podría ser:
 5.  **Usuario (admin) va a "Gestionar Usuarios".**
     *   ➡️ Ve lista de usuarios ➡️ Agrega un nuevo usuario ➡️ Nuevo usuario aparece en la lista (estado local).
 
-## 📊 Estructura de la base de datos (DER)
+## Estructura de la base de datos (DER)
 
 Aunque no hay una base de datos relacional formal, la estructura de los datos (definida en `src/types/index.ts`) se puede conceptualizar así:
 
@@ -226,7 +290,7 @@ Aunque no hay una base de datos relacional formal, la estructura de los datos (d
 *   Player.albumIds <-> Album.id (Muchos a Muchos, a través de array de IDs)
 *   Team.albumIds <-> Album.id (Muchos a Muchos, a través de array de IDs)
 
-## 📊 Estructura del código (UML)
+## Estructura del código (UML)
 
 (Descripción textual de la estructura de directorios principal)
 
@@ -249,7 +313,7 @@ Aunque no hay una base de datos relacional formal, la estructura de los datos (d
         *   `dev.ts`: Punto de entrada para el desarrollo de flujos Genkit.
         *   `flows/`: (Potencialmente para flujos de IA).
 
-## 📊 Diagrama de secuencia
+## Diagrama de secuencia
 
 **Ejemplo: Inicio de Sesión del Usuario**
 
@@ -272,7 +336,7 @@ Aunque no hay una base de datos relacional formal, la estructura de los datos (d
     *   Si `login` retorna `false` ➡️ Muestra toast de error.
 8.  **AppLayout (Cliente)**: Detecta el cambio en `AuthContext.user` y actualiza la UI (ej. muestra avatar y menú de usuario).
 
-## 🔒 Seguridad
+## Seguridad
 
 ### Autenticación y Autorización
 
@@ -293,14 +357,54 @@ Aunque no hay una base de datos relacional formal, la estructura de los datos (d
 *   Si la aplicación se despliega, debe servirse sobre HTTPS para encriptar la comunicación entre el cliente y el servidor.
 *   Las interacciones con Google Drive (iframe) también se realizan sobre HTTPS.
 
-## 🛠 Desarrollo y Créditos
+## Desarrollo y Créditos
 
 *   Este proyecto fue prototipado y desarrollado con la asistencia de Firebase Studio (App Prototyper AI).
 *   Inspirado en la pasión por el fútbol y el coleccionismo de álbumes.
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto es de código abierto y se distribuye bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles (actualmente no existe, se debería añadir uno si se desea especificar una licencia).
 
 *(Puedes reemplazar esta sección con la licencia que elijas, por ejemplo, MIT).*
+
+## Troubleshooting
+
+### Port 9002 already in use
+If you encounter this error when running `npm run dev`:
+```
+Error: listen EADDRINUSE: address already in use :::9002
+```
+
+Solutions:
+1. **Kill the process using port 9002**:
+   ```powershell
+   netstat -ano | findstr :9002  # Find the process ID
+   taskkill /PID <PID> /F        # Replace <PID> with the actual process ID
+   ```
+2. **Use a different port**:
+   ```powershell
+   npm run dev -- -p 9003
+   ```
+
+## Getting Started
+
+### Prerequisites
+- Node.js v18+
+- npm or yarn
+
+### Installation
+```bash
+npm install
+```
+
+### Development
+```bash
+npm run dev
+```
+
+### Production Build
+```bash
+npm run build
+npm run start
 ```

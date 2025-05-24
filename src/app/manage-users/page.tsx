@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,13 +23,30 @@ type User = {
   createdAt: string;
 };
 
-type AddUserFormData = Required<UserCredentials>;
+type AddUserFormData = {
+  email: string;
+  username: string;
+  password: string;
+};
+
+type AddUserResponse = {
+  success: boolean;
+  message: string;
+};
+
+interface AuthContextType {
+  user: User | null;
+  addUser: (userData: UserCredentials) => Promise<AddUserResponse>;
+  getUsers: () => Promise<User[]>;
+  loading: boolean;
+}
 
 export default function ManageUsersPage() {
-  const { user, addUser, getUsers, loading: authLoading } = useAuth();
+  const authContext = useAuth();
+  const { user, addUser, getUsers, loading: authLoading } = authContext as unknown as AuthContextType;
   const router = useRouter();
   const { toast } = useToast();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<AddUserFormData>();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<UserCredentials>();
   const [isLoading, setIsLoading] = useState(false);
   const [userList, setUserList] = useState<User[]>([]);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -91,24 +110,30 @@ export default function ManageUsersPage() {
     }
   };
 
-  const handleAddUserSubmit = async (data: AddUserFormData) => {
+  const onSubmit = async (formData: UserCredentials) => {
     setIsLoading(true);
-    const result = await addUser(data);
-    setIsLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Usuario Agregado",
-        description: result.message,
+    try {
+      const result = await addUser({
+        username: formData.username,
+        password: formData.password
       });
-      fetchUsers();
-      reset();
-    } else {
       toast({
-        variant: "destructive",
-        title: "Error al Agregar Usuario",
+        title: result.success ? 'Usuario creado' : 'Error',
         description: result.message,
+        variant: result.success ? 'default' : 'destructive'
       });
+      if (result.success) {
+        reset();
+        fetchUsers();
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Error al crear usuario',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -221,15 +246,20 @@ export default function ManageUsersPage() {
             </CardTitle>
             <CardDescription>Completa el formulario para crear una nueva cuenta de usuario.</CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit(handleAddUserSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
               <div className="space-y-1">
                 <Label htmlFor="username">Nombre de Usuario</Label>
                 <Input
                   id="username"
-                  type="text"
-                  {...register("username", { required: "El nombre de usuario es obligatorio" })}
-                  placeholder="ej. nuevo_usuario"
+                  {...register("username", { 
+                    required: "El nombre de usuario es obligatorio",
+                    minLength: {
+                      value: 3,
+                      message: "El nombre de usuario debe tener al menos 3 caracteres"
+                    }
+                  })}
+                  placeholder="ej. usuario123"
                 />
                 {errors.username && <p className="text-sm text-destructive mt-1">{errors.username.message}</p>}
               </div>
@@ -238,8 +268,14 @@ export default function ManageUsersPage() {
                 <Input
                   id="password"
                   type="password"
-                  {...register("password", { required: "La contraseña es obligatoria", minLength: { value: 3, message: "La contraseña debe tener al menos 3 caracteres" } })}
-                  placeholder="••••••••"
+                  {...register("password", { 
+                    required: "La contraseña es obligatoria",
+                    minLength: {
+                      value: 6,
+                      message: "La contraseña debe tener al menos 6 caracteres"
+                    }
+                  })}
+                  placeholder="••••••"
                 />
                 {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
               </div>

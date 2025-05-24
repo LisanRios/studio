@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { Album, AlbumFormData } from "@/types";
 import { AlbumCard } from "@/components/albums/album-card";
@@ -40,7 +39,7 @@ type ViewMode = "grid" | "list";
 
 const ALL_FILTER_VALUE = "all";
 
-export default function AlbumsPage() {
+function AlbumsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -529,5 +528,13 @@ export default function AlbumsPage() {
       </Dialog>
 
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AlbumsPage />
+    </Suspense>
   );
 }
